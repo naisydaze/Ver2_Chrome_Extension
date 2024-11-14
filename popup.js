@@ -3,7 +3,7 @@ document.getElementById("startTrivia").addEventListener("click", function(){
 });
 
 document.getElementById("settingsPage").addEventListener("click", function(){
-    chrome.tabs.create({url:"settings.html"});
+    chrome.tabs.create({url:"index.html"});
 });
 
 // Function to check if the answer is correct and update counters
