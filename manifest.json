@@ -1,0 +1,14 @@
+{
+  "name": "VER2 extension",
+  "description": "A customisable self-improvement extension",
+  "version": "1.0",
+  "permissions": ["storage", "alarms", "notifications"],
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "hello_extensions.png"
+  },
+  "background":{
+    "service_worker": "background.js"
+  }
+}
