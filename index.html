@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Self Improvement Tracker</title>
+  <style>
+    /* Simple styling */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .stats {
+      margin: 10px 0;
+    }
+    button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Self-Improvement Tracker Settings</h1>
+  <div class="stats">
+    <p>Right Answers: <span id="rightAns">0</span></p>
+    <p>Wrong Answers: <span id="wrongAns">0</span></p>
+  </div>
+  <button onclick="resetProgress()">Reset Progress</button>
+
+  <h1>Self-Improvement Notification Settings</h1>
+  <div>
+    <label for="notification-interval">Receive notifications every:</label> 
+    <select id="notification-interval">
+      <option value="1">1 Minute</option>
+      <option value="180">3 Hours</option>
+      <option value="1440">1 Day</option>
+    </select>
+  </div>
+
+  <h1>Self-Improvement Banner Settings</h1>
+  <div>
+    <input type = "checkbox" id = "show-preview" />
+    <label for = "show-preview">Show message preview</label> 
+  </div>
+
+
+  <button id="save-settings">Save settings changes</button>
+  <button onclick="resetProgress()">Reset Progress</button>
+
+
+  <script src="settings.js"></script>
+</body>
+</html>
