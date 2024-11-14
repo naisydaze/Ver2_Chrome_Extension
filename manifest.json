@@ -10,5 +10,6 @@
   },
   "background":{
     "service_worker": "background.js"
-  }
+  },
+  "host_permissions":["https://naisydaze.github.io/Ver2_Chrome_Extension/"]
 }
