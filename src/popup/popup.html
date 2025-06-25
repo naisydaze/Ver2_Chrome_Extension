@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Motivational Quote Generator</title>
+  <style>
+    .category-btn {
+      padding: 8px 16px;
+      margin: 4px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .category-btn.selected {
+      background: #0078d7;
+      color: #fff;
+      border-color: #0078d7;
+    }
+    .interval-select {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<head>
+  <title>Motivational Quote Generator</title>
+</head>
+<body>
+  <h3>Selected Motivation Category</h3>
+  <div id="selected-category">Loading...</div>
+  <h3>Selected Prompt Interval</h3>
+  <div id="selected-interval">Loading...</div>
+  <button id="saveSettings">Change Settings</button>
+  <script src="popup.js"></script>
+</body>
+<!-- <body>
+  <h3>Selected Motivation Category</h3>
+  <div id="categories">
+    <button class="category-btn" data-category="mindfulness">Mindfulness</button>
+    <button class="category-btn" data-category="goal-focused">Goal-focused</button>
+    <button class="category-btn selected" data-category="leadership">Leadership</button>
+  </div>
+  <h3>Selected Prompt Interval</h3>
+  <div class="interval-select">
+    <label>
+      <select id="hours">
+        <option value="0">0 hours</option>
+        <option value="1">1 hour</option>
+        <option value="2">2 hours</option>
+      </select>
+    </label>
+    <label>
+      <select id="minutes">
+        <option value="0">0 minutes</option>
+        <option value="5">5 minutes</option>
+        <option value="10" selected>10 minutes</option>
+        <option value="15">15 minutes</option>
+        <option value="30">30 minutes</option>
+      </select>
+    </label>
+  </div>
+  <button id="saveSettings">Change Settings</button>
+  <script src="popup.js"></script>
+</body> -->
+</html>
