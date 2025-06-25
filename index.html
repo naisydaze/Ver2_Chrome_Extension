@@ -1,3 +1,110 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>V2 - Self Improvement Extension</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+
+    h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+      color: #1a202c;
+    }
+
+    h2 {
+      font-size: 1.5em;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      color: #2d3748;
+    }
+
+    .step {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .highlight {
+      color: #3182ce;
+      font-weight: bold;
+    }
+
+    .button {
+      background: #3182ce;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .button:hover {
+      background: #2b6cb0;
+    }
+
+    .premium {
+      background: #edf2f7;
+      padding: 15px;
+      border-left: 4px solid #805ad5;
+      margin-top: 20px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to <span class="highlight">V2</span> – A Better Version of You</h1>
+  <p>A self-improvement Chrome extension designed to align you with the best version of yourself.</p>
+
+  <h2>✨ How It Works</h2>
+
+  <div class="step">
+    <strong>1. Select Your Quote Category</strong><br/>
+    Choose the type of motivation you need: <em>Mindfulness, Leadership, Focus, Wisdom</em> and more.
+  </div>
+
+  <div class="step">
+    <strong>2. Set Your Reminder Interval</strong><br/>
+    Decide how often you'd like a motivational push — every 10 minutes, every hour, or just once a day.
+  </div>
+
+  <div class="step">
+    <strong>3. Let the Quotes Inspire You</strong><br/>
+    A notification will gently prompt you at your chosen interval. You can <span class="highlight">favorite quotes</span> you love.
+  </div>
+
+  <div class="step">
+    <strong>4. Build Your Library</strong><br/>
+    Your favorite quotes are saved to your personal collection for reflection or reuse.
+  </div>
+
+  <h2>🚀 Go to Settings</h2>
+  <p>Ready to personalize your experience?</p>
+  <button class="button" onclick="window.location.href='settings.html'">Open Settings</button>
+
+  <div class="premium">
+    <h3>💎 Premium (Coming Soon)</h3>
+    - Replay your favorite quotes only.<br/>
+    - Choose exactly which quotes to cycle through.<br/>
+    - Once you’ve cycled through your saved quotes, the system will pull fresh ones from our default “Motivational” pool.
+  </div>
+
+  <script>
+    // You can add basic interactivity here if needed
+  </script>
+</body>
+</html>
+
+ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,14 +126,19 @@
   </style>
 </head>
 <body>
-  <h1>Self-Improvement Tracker Settings</h1>
-  <div class="stats">
-    <p>Right Answers: <span id="rightAns">0</span></p>
-    <p>Wrong Answers: <span id="wrongAns">0</span></p>
-  </div>
-  <button onclick="resetProgress()">Reset Progress</button>
 
-  <h1>Self-Improvement Notification Settings</h1>
+
+  <h1>Prompt Category</h1>
+  <div>
+    <label for="prompt-category">Select prompt category:</label> 
+    <select id="prompt-category">
+      <option value="wisdom">Wisdom</option>
+      <option value="motivational">Motivational</option>
+      <option value="intelligenece">Intelligence</option>
+    </select>
+  </div>
+
+  <h1>Notification Settings</h1>
   <div>
     <label for="notification-interval">Receive notifications every:</label> 
     <select id="notification-interval">
@@ -47,6 +159,6 @@
   <button onclick="resetProgress()">Reset Progress</button>
 
 
-  <script src="settings.js"></script>
+  <script src="src/settings/settings.js"></script>
 </body>
 </html>

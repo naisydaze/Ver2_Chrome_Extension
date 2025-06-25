@@ -4,12 +4,18 @@
   "version": "1.0",
   "permissions": ["storage", "alarms", "notifications"],
   "manifest_version": 3,
+  "web_accessible_resources": [
+  {
+    "resources": ["hello_extensions.png"],
+    "matches": ["<all_urls>"]
+  }
+  ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": "hello_extensions.png"
   },
-  "background":{
+  "background": {
     "service_worker": "background.js"
   },
-  "host_permissions":["https://naisydaze.github.io/Ver2_Chrome_Extension/"]
+  "host_permissions": ["https://naisydaze.github.io/Ver2_Chrome_Extension/"]
 }
