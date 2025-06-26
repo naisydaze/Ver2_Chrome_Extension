@@ -6,16 +6,17 @@
   "manifest_version": 3,
   "web_accessible_resources": [
   {
-    "resources": ["hello_extensions.png"],
+    "resources": ["harmony.png"],
     "matches": ["<all_urls>"]
   }
   ],
   "action": {
     "default_popup": "src/popup/popup.html",
-    "default_icon": "hello_extensions.png"
+    "default_icon": "harmony.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "host_permissions": ["https://naisydaze.github.io/Ver2_Chrome_Extension/"]
 }

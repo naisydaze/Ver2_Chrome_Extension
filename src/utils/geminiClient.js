@@ -1,8 +1,7 @@
 const GEMINI_API_KEY = "AIzaSyAZSpvJgaCyNc5DPMYh7WD0WCrx7VPZxXI";
 
-export async function fetchQuote(category = "motivational") {
-  const prompt = `Give me a short and impactful quote about ${category.toLowerCase()}. Just return the quote and the author.`;
-
+export async function fetchQuote(category) {
+  const prompt = `Give me a short and impactful quote about ${category.toLowerCase()}.  Ensure it's different from any previous quotes you've provided for this category. Return as "quote" - author format.`;
   const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY, {
     method: "POST",
     headers: {

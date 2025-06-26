@@ -13,7 +13,7 @@
     }
     .category-btn.selected {
       background: #0078d7;
-      color: #fff;
+      color: #eaeddf;
       border-color: #0078d7;
     }
     .interval-select {
@@ -23,12 +23,23 @@
 </head>
 <head>
   <title>Motivational Quote Generator</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h3>Selected Motivation Category</h3>
-  <div id="selected-category">Loading...</div>
-  <h3>Selected Prompt Interval</h3>
-  <div id="selected-interval">Loading...</div>
+  <div>
+    <strong>Selected Motivation Category:</strong>
+    <span id="selected-category">Loading...</span>
+  </div>
+  <div>
+    <strong>Selected Notification Interval:</strong>
+    <span id="selected-interval">Loading...</span>
+  </div>
+  <div style="margin-top: 16px;">
+    <button id="dnd-btn" title="Pause notifications for the rest of the day">Do Not Disturb</button>
+    <!-- <button id="dnd-btn" title="Pause notifications for the rest of the day"> -->
+      <!-- Do Not Disturb
+    </button> -->
+  </div>  
   <button id="saveSettings">Change Settings</button>
   <script src="popup.js"></script>
 </body>
