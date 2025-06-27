@@ -12,13 +12,6 @@ document.addEventListener("DOMContentLoaded", function() {
         this.value === 'custom' ? 'block' : 'none';
     });
 
-    // const promptCategoryElement = document.getElementById("prompt-category");
-    // const promptCategory = promptCategoryElement ? promptCategoryElement.value : null;    
-
-
-    // const intervalElement = document.getElementById("notification-interval");
-    // const interval = intervalElement ? intervalElement.value : null;    
-    // const showPreview = document.getElementById("show-preview").checked;
 
     const categorySelect = document.getElementById('prompt-category');
     const intervalSelect = document.getElementById('notification-interval');
@@ -34,6 +27,13 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
     selectedInterval = parseInt(intervalSelect.value);
     } 
+    chrome.storage.sync.set({ 
+        notificationInterval: selectedInterval, 
+        promptCategory: selectedCategory,
+        showPreview: showPreview
+    }, () => {
+        alert('Settings saved!');
+    });
 
     document.getElementById('reset-btn').addEventListener('click', resetProgress);
 
@@ -42,15 +42,6 @@ document.addEventListener("DOMContentLoaded", function() {
             alert('Extension state reset. Please wait 10–30 minutes before using the quote feature again.');
         });
     }
-
-    // Save to storage
-    chrome.storage.sync.set({
-        promptCategory: selectedCategory,
-        notificationInterval: parseInt(selectedInterval.value),
-        showPreview: showPreview
-    }, () => {
-        alert("Settings saved!");
-    });
   });
 });
 

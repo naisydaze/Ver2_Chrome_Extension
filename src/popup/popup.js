@@ -40,15 +40,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('dnd-btn').addEventListener('click', () => {
-    chrome.storage.sync.get(['dnd', 'notificationInterval'], (data) => {
+    chrome.storage.sync.get(['dnd', 'notificationInterval', 'prevInterval'], (data) => {
       const dndEnabled = data.dnd === true;
       if (dndEnabled) {
-        chrome.storage.sync.set({ dnd: false }, () => {
+        chrome.storage.sync.set({ dnd: false , notificationInterval: data.prevInterval || 1}, () => {
           updateDndButton(false);
           alert('Do Not Disturb disabled. Notifications will resume.');
         });
       } else {
-        chrome.storage.sync.set({ dnd: true, notificationInterval : 1440 }, () => {
+        chrome.storage.sync.set({ dnd: true,
+        prevInterval: data.notificationInterval,
+        notificationInterval: 1440}, () => {
           console.log('notificationInterval set to 1 day');
           updateDndButton(true);
           alert('Notifications paused for the rest of the day.');

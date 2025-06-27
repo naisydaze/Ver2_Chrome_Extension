@@ -5,8 +5,8 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         if (changes.notificationInterval) {
             const interval = changes.notificationInterval.newValue;
             console.log("Show preview setting updated:", interval);
-            chrome.alarms.clear("selfImprovementPrompt", () => {
-                chrome.alarms.create("selfImprovementPrompt", { delayInMinutes: interval, periodInMinutes: interval });
+            chrome.alarms.clear("V2Prompt", () => {
+                chrome.alarms.create("V2Prompt", { delayInMinutes: interval, periodInMinutes: interval });
             });
         }
         if (changes.showPreview) {
@@ -22,7 +22,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === "selfImprovementPrompt") {
+    if (alarm.name === "V2Prompt") {
         chrome.storage.sync.get(["dnd", "dndUntil", "showPreview", "promptCategory"], async (settings) => {
                 // Check DND state
         const now = Date.now();
@@ -36,7 +36,6 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
             const message = settings.showPreview 
                 ? `${quoteObj.quote}`
-                // ? "Here's a preview of your self-improvement prompt!"
                 : "Click here to view your prompt.";
                 
             const url = chrome.runtime.getURL("harmony.png");
@@ -44,7 +43,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             chrome.notifications.create({
                 type: "basic",
                 iconUrl:"harmony.png", 
-                title: "Self-Improvement Prompt",
+                title: "V2 Prompt",
                 message,
                 priority: 1
             });
