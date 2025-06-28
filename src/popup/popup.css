@@ -1,0 +1,18 @@
+#dnd-btn {
+  background: #cbd5e1;
+  color: #2d3748;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#dnd-btn.dnd-on {
+  background: #4299e1; /* blue */
+  color: #fff;
+}
+#dnd-btn.dnd-off {
+  background: #cbd5e1; /* grey */
+  color: #2d3748;
+}
