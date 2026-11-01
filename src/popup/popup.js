@@ -1,67 +1,77 @@
-function updateDndButton(dndEnabled) {
-  const btn = document.getElementById('dnd-btn');
-  btn.classList.remove('dnd-on', 'dnd-off');
-  if (dndEnabled) {
-    btn.classList.add('dnd-on');
-    btn.classList.remove('dnd-off');
-  } else {
-    btn.classList.remove('dnd-on');
-    btn.classList.add('dnd-off');
-  }
-}
+import { getPreferences, isDndActive, savePreferences } from '../utils/preferences.js';
 
 function formatInterval(minutes) {
-  const hrs = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-
-  if (hrs > 0 && mins > 0) return `${hrs} Hour${hrs > 1 ? 's' : ''} ${mins} Minute${mins > 1 ? 's' : ''}`;
-  if (hrs > 0) return `${hrs} Hour${hrs > 1 ? 's' : ''}`;
-  return `${mins} Minute${mins > 1 ? 's' : ''}`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours && remainingMinutes) return `${hours}h ${remainingMinutes}m`;
+    if (hours) return `${hours} hour${hours === 1 ? '' : 's'}`;
+    return `${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.sync.get(['promptCategory', 'notificationInterval'], (data) => {
-    console.log(data);
-    // Show selected category
-    const categories = data.promptCategory || [];
-    const formattedCategories = Array.isArray(categories)
-      ? categories.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')
-      : categories;
+function formatTime(time) {
+    const [hour, minute] = time.split(':').map(Number);
+    return new Intl.DateTimeFormat(undefined, {
+        hour: 'numeric',
+        minute: '2-digit'
+    }).format(new Date(2000, 0, 1, hour, minute));
+}
 
-    document.getElementById('selected-category').textContent = formattedCategories || 'Not set';
+function dndEnd(duration) {
+    const now = new Date();
+    if (duration === 'day') {
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+    }
+    return now.getTime() + (Number(duration) * 60 * 1000);
+}
 
-    const interval = parseInt(data.notificationInterval) || 1;
-    document.getElementById('selected-interval').textContent = formatInterval(interval);
-    updateDndButton(data.dnd === true);
-  });
+function render(preferences) {
+    const { notifications } = preferences;
+    const activeDnd = isDndActive(notifications.dnd);
+    const dndButton = document.getElementById('dnd-btn');
 
-  chrome.storage.sync.get(['dnd'], (data) => {
-    updateDndButton(data.dnd === true);
-  });
+    document.getElementById('selected-category').textContent = preferences.categories
+        .filter((category) => category.enabled)
+        .map((category) => category.name)
+        .join(', ');
+    document.getElementById('selected-interval').textContent =
+        formatInterval(notifications.intervalMinutes);
+    document.getElementById('active-hours').textContent = notifications.activeHours.enabled
+        ? `${formatTime(notifications.activeHours.start)}–${formatTime(notifications.activeHours.end)}`
+        : 'Any time';
 
-  document.getElementById('dnd-btn').addEventListener('click', () => {
-    chrome.storage.sync.get(['dnd', 'notificationInterval', 'prevInterval'], (data) => {
-      const dndEnabled = data.dnd === true;
-      if (dndEnabled) {
-        chrome.storage.sync.set({ dnd: false , notificationInterval: data.prevInterval || 1}, () => {
-          updateDndButton(false);
-          alert('Do Not Disturb disabled. Notifications will resume.');
-        });
-      } else {
-        chrome.storage.sync.set({ dnd: true,
-        prevInterval: data.notificationInterval,
-        notificationInterval: 1440}, () => {
-          console.log('notificationInterval set to 1 day');
-          updateDndButton(true);
-          alert('Notifications paused for the rest of the day.');
-        });
-      }
+    dndButton.classList.toggle('dnd-on', activeDnd);
+    dndButton.classList.toggle('dnd-off', !activeDnd);
+    dndButton.textContent = activeDnd ? 'End Deep Work' : 'Start Deep Work';
+    document.getElementById('dnd-duration').disabled = activeDnd;
+    document.getElementById('dnd-status').textContent = activeDnd
+        ? notifications.dnd.until === null
+            ? 'Paused until you end deep work.'
+            : `Paused until ${new Date(notifications.dnd.until).toLocaleTimeString([], {
+                hour: 'numeric',
+                minute: '2-digit'
+            })}`
+        : 'Notifications are active.';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    let preferences = await getPreferences();
+    render(preferences);
+
+    document.getElementById('dnd-btn').addEventListener('click', async () => {
+        // Re-read before writing so changes made in the settings page are retained.
+        preferences = await getPreferences();
+        const activeDnd = isDndActive(preferences.notifications.dnd);
+        preferences.notifications.dnd = activeDnd
+            ? { enabled: false, until: null }
+            : {
+                enabled: true,
+                until: dndEnd(document.getElementById('dnd-duration').value)
+            };
+        await savePreferences(preferences);
+        render(preferences);
     });
-  });
-;
-});
-  
-// Save settings
-document.getElementById('saveSettings').addEventListener('click',  function(){
-  chrome.tabs.create({url:"index.html"});
+
+    document.getElementById('saveSettings').addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('index.html') });
+    });
 });

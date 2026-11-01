@@ -1,4 +1,40 @@
+body {
+  box-sizing: border-box;
+  width: 320px;
+  margin: 0;
+  padding: 18px;
+  color: #2d3748;
+  font: 14px/1.4 Arial, sans-serif;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.summary-row span {
+  max-width: 165px;
+  text-align: right;
+}
+
+label {
+  display: block;
+  margin: 18px 0 6px;
+  font-weight: 600;
+}
+
+select,
+button {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
 #dnd-btn {
+  margin-top: 8px;
   background: #cbd5e1;
   color: #2d3748;
   border: none;
@@ -7,6 +43,28 @@
   font-size: 1em;
   cursor: pointer;
   transition: background 0.2s;
+}
+
+#dnd-status {
+  min-height: 20px;
+  margin: 7px 0 16px;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+#saveSettings {
+  background: #a3bffa;
+  color: #2d3748;
+  cursor: pointer;
+  font-weight: 600;
+}
+.ai-disclosure {
+  margin: 12px 2px 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
 }
 #dnd-btn.dnd-on {
   background: #4299e1; /* blue */

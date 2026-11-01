@@ -1,58 +1,96 @@
-document.addEventListener("DOMContentLoaded", function() {
-    const categorySelect = document.getElementById('prompt-category');
-    const customCategoryInput = document.getElementById('custom-category');
-    const intervalSelect = document.getElementById('notification-interval');
-    const customHours = document.getElementById('custom-hours');
-    const customMinutes = document.getElementById('custom-minutes');
-    const showPreviewCheckbox = document.getElementById("show-preview");
+import {
+    DEFAULT_PREFERENCES,
+    PRESET_CATEGORIES,
+    getPreferences,
+    savePreferences
+} from '../utils/preferences.js';
 
-    // Show/hide custom category input based on selection
-    categorySelect.addEventListener('change', function() {
-        customCategoryInput.style.display = categorySelect.value === 'custom' ? 'block' : 'none';
-    });
-    // Show/hide on load if needed
-    customCategoryInput.style.display = categorySelect.value === 'custom' ? 'block' : 'none';
+function renderCategories(categories) {
+    const container = document.getElementById('category-options');
+    container.innerHTML = PRESET_CATEGORIES.map((option) => {
+        const selected = categories.some((category) => category.id === option.id && category.enabled);
+        return `
+            <label class="category-option">
+                <input type="checkbox" value="${option.id}" ${selected ? 'checked' : ''}>
+                ${option.name}
+            </label>`;
+    }).join('');
 
-    // Show/hide custom interval fields
-    intervalSelect.addEventListener('change', function() {
-        document.getElementById('custom-interval-fields').style.display =
-        intervalSelect.value === 'custom' ? 'block' : 'none';
-    });
-    // Show/hide on load if needed
-    document.getElementById('custom-interval-fields').style.display =
-        intervalSelect.value === 'custom' ? 'block' : 'none';
+}
 
-    // Save settings
-    document.getElementById('save-settings').addEventListener('click', function() {
-        const showPreview = showPreviewCheckbox.checked;
-        let selectedCategory = categorySelect.value === 'custom'
-        ? customCategoryInput.value
-        : categorySelect.value;
-        let selectedInterval;
-        if (intervalSelect.value === 'custom') {
-        const hours = parseInt(customHours.value) || 0;
-        const minutes = parseInt(customMinutes.value) || 0;
-        selectedInterval = (hours * 60) + minutes;
-        } else {
-        selectedInterval = parseInt(intervalSelect.value);
+function readCategories() {
+    const selectedIds = [...document.querySelectorAll('#category-options input:checked')]
+        .map((input) => input.value);
+    return PRESET_CATEGORIES
+        .filter((option) => selectedIds.includes(option.id))
+        .map((option) => ({ ...option, enabled: true }));
+}
+
+function populateIntervalFields(intervalMinutes) {
+    const select = document.getElementById('notification-interval');
+    const preset = [...select.options].some((option) => option.value === String(intervalMinutes));
+    select.value = preset ? String(intervalMinutes) : 'custom';
+    document.getElementById('custom-hours').value = preset ? '' : Math.floor(intervalMinutes / 60);
+    document.getElementById('custom-minutes').value = preset ? '' : intervalMinutes % 60;
+    toggleCustomInterval();
+}
+
+function toggleCustomInterval() {
+    document.getElementById('custom-interval-fields').hidden =
+        document.getElementById('notification-interval').value !== 'custom';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const preferences = await getPreferences();
+    const { notifications } = preferences;
+
+    renderCategories(preferences.categories);
+    populateIntervalFields(notifications.intervalMinutes);
+    document.getElementById('active-hours-enabled').checked = notifications.activeHours.enabled;
+    document.getElementById('active-hours-start').value = notifications.activeHours.start;
+    document.getElementById('active-hours-end').value = notifications.activeHours.end;
+
+    document.getElementById('notification-interval').addEventListener('change', toggleCustomInterval);
+
+    document.getElementById('save-settings').addEventListener('click', async () => {
+        const categories = readCategories();
+        if (!categories.length) {
+            alert('Select or enter at least one goal category.');
+            return;
         }
-    chrome.storage.sync.set({ 
-        notificationInterval: selectedInterval, 
-        promptCategory: selectedCategory,
-        showPreview: showPreview
-    }, () => {
+
+        const intervalSelect = document.getElementById('notification-interval');
+        const intervalMinutes = intervalSelect.value === 'custom'
+            ? (Number(document.getElementById('custom-hours').value) * 60)
+                + Number(document.getElementById('custom-minutes').value)
+            : Number(intervalSelect.value);
+
+        if (!Number.isFinite(intervalMinutes) || intervalMinutes < 1) {
+            alert('Please choose a notification interval of at least 1 minute.');
+            return;
+        }
+
+        // Preserve a deep-work block that may have been changed in the popup
+        // while this settings page was open.
+        const latestPreferences = await getPreferences();
+        await savePreferences({
+            ...latestPreferences,
+            categories,
+            notifications: {
+                ...latestPreferences.notifications,
+                intervalMinutes,
+                activeHours: {
+                    enabled: document.getElementById('active-hours-enabled').checked,
+                    start: document.getElementById('active-hours-start').value,
+                    end: document.getElementById('active-hours-end').value
+                }
+            }
+        });
         alert('Settings saved!');
     });
 
-    document.getElementById('reset-btn').addEventListener('click', resetProgress);
-
-    function resetProgress() {
-        chrome.storage.sync.clear(() => {
-            alert('Extension state reset. Please wait 10–30 minutes before using the quote feature again.');
-        });
-    }
-  });
+    document.getElementById('reset-btn').addEventListener('click', async () => {
+        await savePreferences(DEFAULT_PREFERENCES);
+        window.location.reload();
+    });
 });
-
-
-  

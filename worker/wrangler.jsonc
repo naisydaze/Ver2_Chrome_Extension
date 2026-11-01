@@ -1,0 +1,40 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "v2-quote-api",
+	"main": "src/index.js",
+	"compatibility_date": "2026-10-30",
+	"observability": {
+		"enabled": true
+	},
+	"ai": {
+		"binding": "AI"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "QUOTE_CACHE",
+			"id": "144989d2bf47475dac141d21ac8cf551"
+		}
+	],
+	"ratelimits": [
+		{
+			"name": "INSTALL_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 10,
+				"period": 60
+			}
+		},
+		{
+			"name": "IP_RATE_LIMITER",
+			"namespace_id": "1002",
+			"simple": {
+				"limit": 120,
+				"period": 60
+			}
+		}
+	],
+	"vars": {
+		"ALLOWED_EXTENSION_ORIGIN": "chrome-extension://ejdjdglalnidhpoopaokkncmkdcnnalp",
+		"BATCH_SIZE": "20"
+	}
+}
