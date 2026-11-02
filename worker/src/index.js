@@ -1,5 +1,6 @@
 const MODEL = '@cf/meta/llama-3.2-3b-instruct';
 const DEFAULT_BATCH_SIZE = 20;
+const MAX_GENERATION_ATTEMPTS = 3;
 const MAX_REQUEST_BYTES = 2048;
 const PRESET_CATEGORIES = new Set([
     'health',
@@ -139,7 +140,27 @@ async function generateBatch(env, category, batchSize) {
 async function generateAndStoreBatch(env, category) {
     const cacheKey = `prompt-batch:v1:${category}`;
     const batchSize = Math.max(5, Math.min(30, Number(env.BATCH_SIZE) || DEFAULT_BATCH_SIZE));
-    const { prompts, usage } = await generateBatch(env, category, batchSize);
+    let generated;
+    let lastError;
+
+    for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
+        try {
+            generated = await generateBatch(env, category, batchSize);
+            break;
+        } catch (error) {
+            lastError = error;
+            console.warn(JSON.stringify({
+                event: 'ai_batch_attempt_failed',
+                category,
+                attempt,
+                message: error instanceof Error ? error.message : String(error)
+            }));
+        }
+    }
+
+    if (!generated) throw lastError || new Error('AI batch generation failed');
+
+    const { prompts, usage } = generated;
     const batchId = crypto.randomUUID();
 
     await env.QUOTE_CACHE.put(
@@ -235,10 +256,27 @@ async function handleGenerate(request, env) {
     }
 
     const generated = [];
+    const failures = [];
     for (const category of requested) {
-        generated.push(await generateAndStoreBatch(env, category));
+        try {
+            generated.push(await generateAndStoreBatch(env, category));
+        } catch (error) {
+            failures.push({
+                category,
+                error: error instanceof Error ? error.message : String(error)
+            });
+        }
     }
-    return json({ generated });
+
+    if (failures.length) {
+        return json({
+            error: 'Some prompt batches could not be generated',
+            generated,
+            failures
+        }, generated.length ? 207 : 503);
+    }
+
+    return json({ generated, failures });
 }
 
 export default {

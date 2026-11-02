@@ -102,3 +102,37 @@ test('protects generation and serves every cached prompt before repeating', asyn
     assert.equal((await repeated.json()).cycleReset, true);
     assert.equal(aiCalls, 1);
 });
+
+test('retries invalid AI batches and returns useful admin failure details', async () => {
+    let aiCalls = 0;
+    const env = {
+        ADMIN_TOKEN: 'test-secret',
+        BATCH_SIZE: '5',
+        AI: {
+            async run() {
+                aiCalls += 1;
+                return { response: 'not json' };
+            }
+        },
+        QUOTE_CACHE: {
+            async put() {
+                assert.fail('invalid batches must not be cached');
+            }
+        }
+    };
+
+    const response = await worker.fetch(new Request('https://example.test/admin/generate', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer test-secret',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ category: 'health' })
+    }), env);
+    const body = await response.json();
+
+    assert.equal(response.status, 503);
+    assert.equal(aiCalls, 3);
+    assert.deepEqual(body.generated, []);
+    assert.match(body.failures[0].error, /JSON array/);
+});
