@@ -49,12 +49,14 @@ function originAllowed(request, env) {
 }
 
 export function normalizeCategory(value) {
-    return String(value || '')
+    const normalized = String(value || '')
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9 -]/g, '')
         .replace(/\s+/g, ' ')
         .slice(0, 40) || 'personal growth';
+
+    return normalized === 'code' ? 'software development' : normalized;
 }
 
 async function generateBatch(env, category, batchSize) {

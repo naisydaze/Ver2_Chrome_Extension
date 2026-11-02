@@ -50,6 +50,7 @@ function passingFlatEvaluation(count) {
 
 test('normalizes categories used as cache keys', () => {
     assert.equal(normalizeCategory('  Software   Development!  '), 'software development');
+    assert.equal(normalizeCategory('Code'), 'software development');
     assert.equal(normalizeCategory(''), 'personal growth');
     assert.equal(normalizeCategory('x'.repeat(60)).length, 40);
 });
