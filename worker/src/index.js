@@ -13,7 +13,7 @@ const MAX_REQUEST_BYTES = 2048;
 const PRESET_CATEGORIES = new Set([
     'health',
     'career',
-    'software development',
+    'code',
     'wisdom',
     'motivation'
 ]);
@@ -56,13 +56,20 @@ export function normalizeCategory(value) {
         .replace(/\s+/g, ' ')
         .slice(0, 40) || 'personal growth';
 
-    return normalized === 'code' ? 'software development' : normalized;
+    return ['software development', 'programming', 'coding'].includes(normalized)
+        ? 'code'
+        : normalized;
+}
+
+function categoryPromptLabel(category) {
+    return category === 'code' ? 'software development and coding' : category;
 }
 
 async function generateBatch(env, category, batchSize) {
     const candidateCount = Math.min(40, batchSize + 10);
+    const promptCategory = categoryPromptLabel(category);
     const prompt = [
-        `Generate exactly ${candidateCount} original, concise self-improvement prompts about ${category}.`,
+        `Generate exactly ${candidateCount} original, concise self-improvement prompts about ${promptCategory}.`,
         'Each prompt must be one sentence of 8 to 22 words.',
         'Do not use quotation marks, author names, attribution, or existing famous quotations.',
         'Keep the tone encouraging, specific, and suitable for a notification.',
@@ -102,6 +109,7 @@ async function generateBatch(env, category, batchSize) {
 }
 
 async function evaluateBatch(env, category, prompts) {
+    const promptCategory = categoryPromptLabel(category);
     const scoreNames = ['relevance', 'actionability', 'clarity', 'tone', 'safety', 'originality'];
     const scoreProperties = Object.fromEntries(
         scoreNames.map((name) => [name, { type: 'integer', minimum: 1, maximum: 5 }])
@@ -122,7 +130,7 @@ async function evaluateBatch(env, category, prompts) {
             },
             {
                 role: 'user',
-                content: `Evaluate these ${category} prompts against this policy:\n${criteria}\n\nPrompts:\n${JSON.stringify(prompts)}`
+                content: `Evaluate these ${promptCategory} prompts against this policy:\n${criteria}\n\nPrompts:\n${JSON.stringify(prompts)}`
             }
         ],
         response_format: {
@@ -294,7 +302,10 @@ async function handleQuote(request, env) {
         return json({ error: 'Unsupported category' }, 400, corsHeaders(request, env));
     }
 
-    const cached = await env.QUOTE_CACHE.get(`prompt-batch:v1:${category}`, 'json');
+    let cached = await env.QUOTE_CACHE.get(`prompt-batch:v1:${category}`, 'json');
+    if ((!Array.isArray(cached?.prompts) || !cached.prompts.length) && category === 'code') {
+        cached = await env.QUOTE_CACHE.get('prompt-batch:v1:software development', 'json');
+    }
     if (!Array.isArray(cached?.prompts) || !cached.prompts.length) {
         return json({ error: 'No cached prompts are available for this category' }, 503, corsHeaders(request, env));
     }

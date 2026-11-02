@@ -3,7 +3,7 @@ export const PREFERENCES_KEY = 'v2Preferences';
 export const PRESET_CATEGORIES = Object.freeze([
     { id: 'health', name: 'Health', topic: 'health' },
     { id: 'career', name: 'Career', topic: 'career' },
-    { id: 'code', name: 'Code', topic: 'software development' },
+    { id: 'code', name: 'Code', topic: 'code' },
     { id: 'wisdom', name: 'Wisdom', topic: 'wisdom' },
     { id: 'motivation', name: 'Motivation', topic: 'motivation' }
 ]);
@@ -40,11 +40,13 @@ export function normalizePreferences(value) {
     const defaults = cloneDefaults();
     const storedCategories = Array.isArray(value?.categories) ? value.categories : [];
     const categories = PRESET_CATEGORIES.map((preset, index) => {
-        const stored = storedCategories.find((category) =>
-            category?.id === preset.id
-            || String(category?.name || '').toLowerCase() === preset.name.toLowerCase()
-            || String(category?.topic || '').toLowerCase() === preset.topic.toLowerCase()
-        );
+        const stored = storedCategories.find((category) => {
+            const storedTopic = String(category?.topic || '').toLowerCase();
+            return category?.id === preset.id
+                || String(category?.name || '').toLowerCase() === preset.name.toLowerCase()
+                || storedTopic === preset.topic.toLowerCase()
+                || (preset.id === 'code' && ['software development', 'programming', 'coding'].includes(storedTopic));
+        });
         return {
             ...preset,
             enabled: stored ? stored.enabled === true : defaults.categories[index].enabled
@@ -98,6 +100,9 @@ async function migrateSyncPreferences() {
         ? legacy.promptCategory
         : [legacy.promptCategory].filter(Boolean);
     const normalizedNames = new Set(names.map((name) => String(name).toLowerCase()));
+    if (['software development', 'programming', 'coding'].some((name) => normalizedNames.has(name))) {
+        normalizedNames.add('code');
+    }
     const categories = PRESET_CATEGORIES.map((category) => ({
         ...category,
         enabled: normalizedNames.has(category.id)
