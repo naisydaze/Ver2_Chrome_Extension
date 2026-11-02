@@ -128,15 +128,23 @@ export function parsePromptBatch(result, expectedSize) {
 
 export function parseEvaluation(result, prompts) {
     const parsed = parseJSONValue(result);
-    const rawEvaluations = parsed?.evaluations;
-    if (!Array.isArray(rawEvaluations)) throw new Error('Evaluator response did not contain evaluations');
+    const rawEvaluations = Array.isArray(parsed)
+        ? parsed
+        : parsed?.evaluations || parsed?.results || parsed?.items;
+    if (!Array.isArray(rawEvaluations)) {
+        const keys = parsed && typeof parsed === 'object' ? Object.keys(parsed).slice(0, 10).join(', ') : 'none';
+        throw new Error(`Evaluator response did not contain evaluations (keys: ${keys})`);
+    }
 
     const byIndex = new Map(rawEvaluations.map((item) => [Number(item?.index), item]));
     const evaluations = prompts.map((prompt, index) => {
         const raw = byIndex.get(index);
         if (!raw) throw new Error(`Evaluator omitted prompt index ${index}`);
 
-        const scores = Object.fromEntries(SCORE_NAMES.map((name) => [name, Number(raw?.scores?.[name])]));
+        const scores = Object.fromEntries(SCORE_NAMES.map((name) => [
+            name,
+            Number(raw?.scores?.[name] ?? raw?.[name])
+        ]));
         const scoresValid = SCORE_NAMES.every((name) => Number.isInteger(scores[name]) && scores[name] >= 1 && scores[name] <= 5);
         if (!scoresValid) throw new Error(`Evaluator returned invalid scores for prompt index ${index}`);
 

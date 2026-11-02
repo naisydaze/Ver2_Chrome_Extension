@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker, { normalizeCategory } from '../src/index.js';
-import { parsePromptBatch, validatePrompt } from '../src/quality.js';
+import { parseEvaluation, parsePromptBatch, validatePrompt } from '../src/quality.js';
 
 const samplePrompts = [
     'Take one concrete step toward the task you have been avoiding today.',
@@ -29,6 +29,22 @@ function passingEvaluation(count) {
             }))
         },
         usage: { neurons: 2 }
+    };
+}
+
+function passingFlatEvaluation(count) {
+    return {
+        response: Array.from({ length: count }, (_, index) => ({
+            index,
+            pass: true,
+            relevance: 5,
+            actionability: 4,
+            clarity: 5,
+            tone: 5,
+            safety: 5,
+            originality: 4,
+            reasons: []
+        }))
     };
 }
 
@@ -62,6 +78,10 @@ test('deterministic policy rejects unsafe claims and attributed quotations', () 
     assert.equal(validatePrompt('This routine will always cure your anxiety and guarantee perfect health.').valid, false);
     assert.equal(validatePrompt('Success is final, courage is everything. — Famous Person').valid, false);
     assert.equal(validatePrompt(samplePrompts[0]).valid, true);
+});
+
+test('accepts the evaluator flat-array response shape', () => {
+    assert.equal(parseEvaluation(passingFlatEvaluation(samplePrompts.length), samplePrompts).pass, true);
 });
 
 test('protects generation and serves every cached prompt before repeating', async () => {

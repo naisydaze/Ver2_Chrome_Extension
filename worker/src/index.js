@@ -6,7 +6,7 @@ import {
 } from './quality.js';
 
 const GENERATOR_MODEL = '@cf/meta/llama-3.2-3b-instruct';
-const EVALUATOR_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8-fast';
+const EVALUATOR_MODEL = '@cf/meta/llama-3.1-8b-instruct-fast';
 const DEFAULT_BATCH_SIZE = 20;
 const MAX_GENERATION_ATTEMPTS = 3;
 const MAX_REQUEST_BYTES = 2048;
@@ -100,9 +100,9 @@ async function generateBatch(env, category, batchSize) {
 }
 
 async function evaluateBatch(env, category, prompts) {
+    const scoreNames = ['relevance', 'actionability', 'clarity', 'tone', 'safety', 'originality'];
     const scoreProperties = Object.fromEntries(
-        ['relevance', 'actionability', 'clarity', 'tone', 'safety', 'originality']
-            .map((name) => [name, { type: 'integer', minimum: 1, maximum: 5 }])
+        scoreNames.map((name) => [name, { type: 'integer', minimum: 1, maximum: 5 }])
     );
     const criteria = Object.entries(QUALITY_CRITERIA)
         .map(([name, definition]) => `${name}: ${definition}`)
@@ -137,19 +137,14 @@ async function evaluateBatch(env, category, prompts) {
                             properties: {
                                 index: { type: 'integer', minimum: 0, maximum: prompts.length - 1 },
                                 pass: { type: 'boolean' },
-                                scores: {
-                                    type: 'object',
-                                    properties: scoreProperties,
-                                    required: Object.keys(scoreProperties),
-                                    additionalProperties: false
-                                },
+                                ...scoreProperties,
                                 reasons: {
                                     type: 'array',
                                     items: { type: 'string' },
                                     maxItems: 3
                                 }
                             },
-                            required: ['index', 'pass', 'scores', 'reasons'],
+                            required: ['index', 'pass', ...scoreNames, 'reasons'],
                             additionalProperties: false
                         }
                     }
