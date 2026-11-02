@@ -68,7 +68,7 @@ Whether you're coding, studying, or simply navigating your day, V2 offers quiet 
 
 The extension works offline with bundled prompts. The `worker/` project adds
 original AI-generated prompts without exposing an API key in the extension.
-Cloudflare Workers AI creates a protected maintenance batch, Workers KV caches it, and
+Cloudflare Workers AI creates and evaluates a protected maintenance batch, Workers KV caches it, and
 the extension falls back to its bundled prompts whenever the backend is
 unavailable.
 
@@ -132,6 +132,20 @@ unavailable.
 
    Set `V2_ADMIN_TOKEN` locally to the same secret entered into Wrangler. Never
    put this secret in the extension or commit it to Git.
+
+   Generation first writes each candidate batch to the separate `QUOTE_STAGING`
+   namespace. Deterministic rules check format, safety language, attribution,
+   duplicates, and batch diversity. An independent evaluator then scores category
+   relevance, actionability, clarity, tone, safety, and originality. Only a batch
+   in which every prompt passes is promoted to `QUOTE_CACHE`; rejected and failed
+   attempts remain in staging for audit.
+
+   Inspect the latest staged decision for a category with:
+
+   ```bash
+   curl "https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/admin/staging?category=health" \
+     -H "Authorization: Bearer $V2_ADMIN_TOKEN"
+   ```
 
 10. Reload the unpacked extension on `chrome://extensions`. The public
     `/quote` endpoint only reads the cache and never invokes AI. Each extension

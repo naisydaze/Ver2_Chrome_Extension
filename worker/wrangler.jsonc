@@ -13,6 +13,10 @@
 		{
 			"binding": "QUOTE_CACHE",
 			"id": "144989d2bf47475dac141d21ac8cf551"
+		},
+		{
+			"binding": "QUOTE_STAGING",
+			"id": "dd3da500108e49e59b681f950d2aaab3"
 		}
 	],
 	"ratelimits": [
