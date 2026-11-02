@@ -38,7 +38,7 @@
 		}
 	],
 	"vars": {
-		"ALLOWED_EXTENSION_ORIGIN": "chrome-extension://ejdjdglalnidhpoopaokkncmkdcnnalp",
+		"ALLOWED_EXTENSION_ORIGIN": "chrome-extension://igonfkldenaeailncliahdblmcmnnoci",
 		"BATCH_SIZE": "20"
 	}
 }
