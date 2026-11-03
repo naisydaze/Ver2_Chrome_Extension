@@ -28,6 +28,12 @@ function render(preferences) {
     const { notifications } = preferences;
     const activeDnd = isDndActive(notifications.dnd);
     const dndButton = document.getElementById('dnd-btn');
+    const upgradeNotice = document.getElementById('upgrade-notice');
+    const needsReview = preferences.upgradeReview?.categoryChanged || preferences.upgradeReview?.previewChanged;
+    upgradeNotice.hidden = !needsReview;
+    if (needsReview) {
+        upgradeNotice.textContent = 'V2 has changed some settings. Reminders are paused until you review and save them.';
+    }
 
     document.getElementById('selected-category').textContent = preferences.categories
         .filter((category) => category.enabled)

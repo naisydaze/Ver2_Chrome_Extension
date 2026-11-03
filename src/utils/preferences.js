@@ -49,7 +49,7 @@ export function normalizePreferences(value) {
         });
         return {
             ...preset,
-            enabled: stored ? stored.enabled === true : defaults.categories[index].enabled
+            enabled: stored ? stored.enabled === true : (storedCategories.length === 0 && defaults.categories[index].enabled)
         };
     });
     if (!categories.some((category) => category.enabled)) {
@@ -62,6 +62,10 @@ export function normalizePreferences(value) {
     return {
         version: 1,
         categories,
+        upgradeReview: {
+            categoryChanged: value?.upgradeReview?.categoryChanged === true,
+            previewChanged: value?.upgradeReview?.previewChanged === true
+        },
         notifications: {
             intervalMinutes: Number.isFinite(interval) && interval >= 1
                 ? interval
@@ -91,7 +95,8 @@ async function migrateSyncPreferences() {
         'notificationInterval',
         'dnd',
         'dndUntil',
-        'prevInterval'
+        'prevInterval',
+        'showPreview'
     ]);
     const hasLegacyData = Object.values(legacy).some((value) => value !== undefined);
     if (!hasLegacyData) return cloneDefaults();
@@ -99,7 +104,8 @@ async function migrateSyncPreferences() {
     const names = Array.isArray(legacy.promptCategory)
         ? legacy.promptCategory
         : [legacy.promptCategory].filter(Boolean);
-    const normalizedNames = new Set(names.map((name) => String(name).toLowerCase()));
+    const normalizedNames = new Set(names.map((name) => String(name).trim().toLowerCase()).filter(Boolean));
+    if (normalizedNames.has('motivational')) normalizedNames.add('motivation');
     if (['software development', 'programming', 'coding'].some((name) => normalizedNames.has(name))) {
         normalizedNames.add('code');
     }
@@ -109,12 +115,21 @@ async function migrateSyncPreferences() {
             || normalizedNames.has(category.name.toLowerCase())
             || normalizedNames.has(category.topic.toLowerCase())
     }));
+    const knownNames = new Set([...PRESET_CATEGORIES.map((category) => category.id),
+        'motivational', 'software development', 'programming', 'coding']);
+    const categoryChanged = [...normalizedNames].some((name) => !knownNames.has(name));
 
     const endOfToday = new Date();
     endOfToday.setHours(24, 0, 0, 0);
 
     return normalizePreferences({
         categories: categories.length ? categories : undefined,
+        upgradeReview: {
+            categoryChanged,
+            // Version 1.0 only showed previews when this value was truthy;
+            // an unset value therefore also meant hidden notification text.
+            previewChanged: legacy.showPreview !== true
+        },
         notifications: {
             intervalMinutes: legacy.dnd && legacy.prevInterval
                 ? legacy.prevInterval

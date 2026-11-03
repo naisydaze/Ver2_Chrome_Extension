@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 package_dir="$repo_root/dist/v2-extension"
-zip_path="$repo_root/dist/v2-extension-1.1.0.zip"
+zip_path="$repo_root/dist/v2-extension-1.1.1.zip"
 
 rm -rf "$package_dir"
 rm -f "$zip_path"

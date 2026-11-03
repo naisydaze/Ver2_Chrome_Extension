@@ -7,6 +7,16 @@ body {
   font: 14px/1.4 Arial, sans-serif;
 }
 
+.upgrade-notice {
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid #f3c98c;
+  border-radius: 6px;
+  background: #fff8eb;
+  color: #704b15;
+  font-size: 12px;
+}
+
 .summary-row {
   display: flex;
   justify-content: space-between;

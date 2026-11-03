@@ -44,6 +44,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const preferences = await getPreferences();
     const { notifications } = preferences;
 
+    const upgradeNotice = document.getElementById('upgrade-notice');
+    const notices = [];
+    if (preferences.upgradeReview?.categoryChanged) {
+        notices.push('One or more of your previous categories are no longer available. Please review the categories selected below.');
+    }
+    if (preferences.upgradeReview?.previewChanged) {
+        notices.push('V2 now shows the full prompt in notifications; the option to hide previews has been removed.');
+    }
+    if (notices.length) {
+        upgradeNotice.textContent = `${notices.join(' ')} Reminders are paused until you review and save these settings.`;
+        upgradeNotice.hidden = false;
+    }
+
     renderCategories(preferences.categories);
     populateIntervalFields(notifications.intervalMinutes);
     document.getElementById('active-hours-enabled').checked = notifications.activeHours.enabled;
@@ -76,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await savePreferences({
             ...latestPreferences,
             categories,
+            upgradeReview: { categoryChanged: false, previewChanged: false },
             notifications: {
                 ...latestPreferences.notifications,
                 intervalMinutes,
@@ -86,6 +100,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         });
+        upgradeNotice.hidden = true;
+        upgradeNotice.textContent = '';
         alert('Settings saved!');
     });
 

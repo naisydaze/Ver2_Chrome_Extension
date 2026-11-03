@@ -1,7 +1,7 @@
 {
   "name": "V2",
   "description": "A customisable self-improvement extension",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "permissions": ["storage", "alarms", "notifications"],
   "host_permissions": ["https://v2-quote-api.shanaisyz.workers.dev/*"],
   "manifest_version": 3,

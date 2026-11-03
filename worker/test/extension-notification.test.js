@@ -44,3 +44,32 @@ test('a network failure still creates a reminder using the packaged icon', async
     assert.ok(created.message);
     assert.equal(created.title, 'V2 Prompt · Health');
 });
+
+test('reminders remain paused until an affected user reviews the upgrade', async (t) => {
+    let alarmListener;
+    let notificationCount = 0;
+    let resolvePaused;
+    const paused = new Promise((resolve) => { resolvePaused = resolve; });
+    t.mock.method(console, 'log', (message) => {
+        if (message === 'Reminder paused until updated settings are reviewed.') resolvePaused();
+    });
+    const preferences = {
+        categories: [{ id: 'health', enabled: true }],
+        upgradeReview: { categoryChanged: true, previewChanged: false },
+        notifications: { intervalMinutes: 1, activeHours: { enabled: false }, dnd: { enabled: false } }
+    };
+    globalThis.chrome = {
+        runtime: { onInstalled: { addListener() {} }, onStartup: { addListener() {} } },
+        alarms: { create() {}, async get() { return { periodInMinutes: 1 }; }, onAlarm: { addListener(listener) { alarmListener = listener; } } },
+        storage: {
+            local: { async get() { return { v2Preferences: preferences }; }, async set() {} },
+            onChanged: { addListener() {} }
+        },
+        notifications: { async create() { notificationCount += 1; } }
+    };
+    t.after(() => { delete globalThis.chrome; });
+    await import('../../background.js?upgrade-review-test');
+    alarmListener({ name: 'V2Prompt' });
+    await Promise.race([paused, new Promise((_, reject) => setTimeout(() => reject(new Error('Pause not observed')), 1000))]);
+    assert.equal(notificationCount, 0);
+});

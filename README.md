@@ -32,6 +32,26 @@ An administrator can refresh a category's shared batch through a protected endpo
 
 The current configuration uses batches of 20 and manual administrator-triggered refreshes. AI checks reduce risk but cannot guarantee every prompt is appropriate or original. See the [quality policy](worker/QUALITY_POLICY.md) for the criteria and limitations. Existing cache entries may predate the current evaluation workflow.
 
+## Version history
+
+### 1.1.1
+
+- Maps the previous **Motivational** category to **Motivation** when migrating version 1.0 settings.
+- Asks affected users to review their settings when their previous category is unavailable or they had hidden notification previews. Reminders remain paused until they save their choices.
+- Fixes an issue that could re-enable Health when another category was selected.
+
+The review notice applies when version 1.0 settings are first migrated. It does not automatically restore choices already changed by an earlier 1.1.0 migration.
+
+### 1.1.0
+
+- Added five preset categories, active hours, and timed Deep Work pauses.
+- Added shared cached AI-generated prompts and bundled fallback prompts.
+- Updated the settings and popup interfaces.
+
+### 1.0
+
+- Introduced motivational reminders, category selection, custom intervals, and Do Not Disturb.
+
 ## Technology
 
 - **Extension:** JavaScript, HTML, CSS, and Chrome's Manifest V3 APIs.
@@ -101,6 +121,8 @@ To create a clean Chrome Web Store package from the repository root:
 ```bash
 ./scripts/build-extension.sh
 ```
+
+The resulting package is `dist/v2-extension-1.1.1.zip`.
 
 ## Privacy
 

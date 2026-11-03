@@ -6,7 +6,7 @@ Policy version: `2026-11-02-v1`
 
 An approved V2 prompt must:
 
-1. **Be relevant** — clearly fit Health, Career, Code, Wisdom, or Motivation.
+1. **Be relevant** — aim to fit Health, Career, Code, Wisdom, or Motivation.
 2. **Be useful** — invite one realistic action or worthwhile moment of reflection.
 3. **Be clear** — express one standalone idea in 8–22 words and at most one sentence.
 4. **Be supportive** — sound calm and encouraging without shame, pressure, or judgment.
@@ -39,7 +39,8 @@ from Cloudflare Workers AI generation.
 
 ## Human oversight
 
-Per-batch human approval is not required for this low-risk use case. Periodic sampling is still
-recommended after policy, model, or category changes because model-based evaluation can share
-biases and blind spots with generation. Staging records make those audits possible without
-exposing unapproved prompts to users.
+Per-batch human approval is not required for this use case. Automated checks and model scores
+cannot guarantee safety, relevance, or originality. Periodic sampling is recommended after policy,
+model, or category changes because evaluators can make mistakes and share biases or blind spots
+with the generator. Staging records make those audits possible without exposing unapproved new
+prompts to users. Cache entries generated before this policy may not have passed these checks.

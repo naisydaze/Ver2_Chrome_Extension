@@ -27,6 +27,24 @@ Features:
 
 V2 does not read browsing history or page contents.
 
+## What's new
+
+### Version 1.1.1
+
+- Improves migration of version 1.0 settings, including mapping Motivational to Motivation.
+- Adds a settings review notice when a previous category or hidden-preview option is unavailable. Reminders are paused until affected users save their choices.
+- Fixes an issue where Health could be re-enabled when another category was selected.
+
+### Version 1.1.0
+
+- Added five preset categories, active hours, and timed Deep Work pauses.
+- Added cached AI-generated prompts and bundled offline fallback prompts.
+- Updated the settings and popup interfaces.
+
+### Version 1.0
+
+- Introduced motivational reminders, category selection, custom intervals, and Do Not Disturb.
+
 ## Permission justifications
 
 - `alarms`: schedules reminders at the interval selected by the user.
@@ -36,7 +54,7 @@ V2 does not read browsing history or page contents.
 
 ## Data disclosure
 
-V2 sends a selected preset category and a random installation identifier to its Cloudflare service. It does not send browsing history or page contents. See `PRIVACY.md` and host that document at a public URL before submission.
+V2 sends a selected preset category, a random installation identifier, and recently shown prompt identifiers to its Cloudflare service. It does not send browsing history or page contents. For administrator-triggered quality checks, generated candidate prompts and their category are sent to OpenAI. See `PRIVACY.md` and host that document at a public URL before submission.
 
 ## Required listing assets
 

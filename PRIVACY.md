@@ -10,7 +10,7 @@ V2 stores notification preferences, active hours, deep-work status, recently sho
 
 When requesting a cached AI-generated prompt, V2 sends only:
 
-- one selected preset category (Health, Career, Code, Wisdom, or Motivation); and
+- one selected preset category (Health, Career, Code, Wisdom, or Motivation);
 - the random installation identifier used for abuse prevention and rate limiting; and
 - recently shown prompt identifiers, so the service can avoid repeats.
 
@@ -32,7 +32,9 @@ The use of information received from Google APIs will adhere to the Chrome Web S
 
 ## Retention and control
 
-Local data remains until the extension is removed, its storage is cleared, or preferences are reset. Cached prompts contain no user identifiers. Cloudflare retains platform logs according to the account's configured Cloudflare retention settings.
+Settings are stored locally on each device. On upgrade from version 1.0, V2 reads the previous settings from Chrome's sync storage; subsequent settings changes are stored locally rather than synchronized. V2 does not delete the old sync values during migration.
+
+Resetting preferences restores default settings. The installation identifier and prompt history are separate from preferences and remain until extension storage is cleared or the extension is removed. Cached prompts contain no user identifiers. Cloudflare retains platform logs according to the account's configured Cloudflare retention settings.
 
 If the online service is unavailable, V2 uses prompts bundled with the extension.
 

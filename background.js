@@ -51,6 +51,11 @@ async function showReminderIfAllowed() {
     const preferences = await getPreferences();
     const { notifications } = preferences;
 
+    if (preferences.upgradeReview?.categoryChanged || preferences.upgradeReview?.previewChanged) {
+        console.log('Reminder paused until updated settings are reviewed.');
+        return;
+    }
+
     if (isDndActive(notifications.dnd)) {
         console.log('Deep work mode active; reminder skipped.');
         return;
