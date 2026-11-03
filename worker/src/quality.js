@@ -58,17 +58,27 @@ export function validatePrompt(value) {
 }
 
 function parseJSONValue(result) {
+    const message = result?.choices?.[0]?.message;
     const candidates = [
         result?.response,
         result?.result?.response,
         result?.output_text,
         result?.generated_text,
         result?.text,
-        result?.choices?.[0]?.message?.content,
+        message?.parsed,
+        message?.content,
+        result?.choices?.[0]?.text,
         result
     ];
 
     for (const candidate of candidates) {
+        if (Array.isArray(candidate) && candidate.length && candidate.every((item) => item?.type === 'text' && typeof item.text === 'string')) {
+            try {
+                return JSON.parse(candidate.map((item) => item.text).join(''));
+            } catch {
+                continue;
+            }
+        }
         if (candidate && typeof candidate === 'object') return candidate;
         if (typeof candidate !== 'string') continue;
         const trimmed = candidate.trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
@@ -93,14 +103,18 @@ function parseJSONValue(result) {
     throw new Error(`AI returned no valid JSON response (top-level keys: ${keys})`);
 }
 
-export function parsePromptBatch(result, expectedSize) {
+export function parsePromptBatch(result, expectedSize, existing = [], rejected = []) {
     const parsed = parseJSONValue(result);
     const candidates = Array.isArray(parsed) ? parsed : parsed?.prompts;
     if (!Array.isArray(candidates)) throw new Error('AI response did not contain a prompt array');
 
-    const selected = [];
-    const normalizedSeen = new Set();
+    const selected = [...existing];
+    const normalizedSeen = new Set([...existing, ...rejected].map((prompt) => prompt.toLocaleLowerCase('en-US')));
     const openingCounts = new Map();
+    for (const prompt of existing) {
+        const opening = words(prompt).slice(0, 2).join(' ');
+        openingCounts.set(opening, (openingCounts.get(opening) || 0) + 1);
+    }
 
     for (const candidate of candidates) {
         const validation = validatePrompt(candidate);
@@ -108,7 +122,7 @@ export function parsePromptBatch(result, expectedSize) {
 
         const normalized = validation.prompt.toLocaleLowerCase('en-US');
         if (normalizedSeen.has(normalized)) continue;
-        if (selected.some((existing) => similarity(existing, validation.prompt) >= 0.72)) continue;
+        if ([...selected, ...rejected].some((existing) => similarity(existing, validation.prompt) >= 0.72)) continue;
 
         const opening = words(validation.prompt).slice(0, 2).join(' ');
         const openingCount = openingCounts.get(opening) || 0;
@@ -120,9 +134,6 @@ export function parsePromptBatch(result, expectedSize) {
         if (selected.length === expectedSize) break;
     }
 
-    if (selected.length < expectedSize) {
-        throw new Error(`AI returned ${selected.length} deterministic-policy prompts; ${expectedSize} required`);
-    }
     return selected;
 }
 
@@ -137,6 +148,10 @@ export function parseEvaluation(result, prompts) {
     }
 
     const byIndex = new Map(rawEvaluations.map((item) => [Number(item?.index), item]));
+    if (rawEvaluations.length !== prompts.length || byIndex.size !== prompts.length
+        || rawEvaluations.some((item) => !Number.isInteger(item?.index) || item.index < 0 || item.index >= prompts.length)) {
+        throw new Error('Evaluator returned duplicate, missing, or invalid prompt indices');
+    }
     const evaluations = prompts.map((prompt, index) => {
         const raw = byIndex.get(index);
         if (!raw) throw new Error(`Evaluator omitted prompt index ${index}`);

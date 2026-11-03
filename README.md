@@ -68,7 +68,7 @@ Whether you're coding, studying, or simply navigating your day, V2 offers quiet 
 
 The extension works offline with bundled prompts. The `worker/` project adds
 original AI-generated prompts without exposing an API key in the extension.
-Cloudflare Workers AI creates and evaluates a protected maintenance batch, Workers KV caches it, and
+Cloudflare Workers AI generates a protected maintenance batch, GPT-5.4 evaluates it via the OpenAI API, Workers KV caches it, and
 the extension falls back to its bundled prompts whenever the backend is
 unavailable.
 
@@ -120,6 +120,15 @@ unavailable.
    npx wrangler secret put ADMIN_TOKEN
    ```
 
+   Create a separate OpenAI API key with access to GPT-5.4 and add it as a Worker secret:
+
+   ```bash
+   npx wrangler secret put OPENAI_API_KEY
+   ```
+
+   Evaluation sends generated prompts and category names to OpenAI. It uses the paid OpenAI
+   API, separately from Cloudflare Workers AI. Do not put either secret in the extension or Git.
+
 9. Deploy again, then generate all five preset caches from a trusted terminal:
 
    ```bash
@@ -133,9 +142,11 @@ unavailable.
    Set `V2_ADMIN_TOKEN` locally to the same secret entered into Wrangler. Never
    put this secret in the extension or commit it to Git.
 
-   Generation first writes each candidate batch to the separate `QUOTE_STAGING`
-   namespace. Deterministic rules check format, safety language, attribution,
-   duplicates, and batch diversity. An independent evaluator then scores category
+   Generation retains approved candidates across up to three attempts, requesting only
+   the missing prompts plus a small allowance. Partial batches are saved in the separate
+   `QUOTE_STAGING` namespace for inspection. Deterministic rules check format, safety
+   language, attribution, duplicates, and batch diversity. Candidates are
+   staged before an independent evaluator scores category
    relevance, actionability, clarity, tone, safety, and originality. Only a batch
    in which every prompt passes is promoted to `QUOTE_CACHE`; rejected and failed
    attempts remain in staging for audit.

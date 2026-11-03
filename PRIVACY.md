@@ -1,6 +1,6 @@
 # V2 Privacy Policy
 
-Effective date: November 2, 2026
+Effective date: November 3, 2026
 
 V2 provides configurable self-improvement prompts through Chrome notifications.
 
@@ -11,7 +11,8 @@ V2 stores notification preferences, active hours, deep-work status, recently sho
 When requesting a cached AI-generated prompt, V2 sends only:
 
 - one selected preset category (Health, Career, Code, Wisdom, or Motivation); and
-- the random installation identifier used for abuse prevention and rate limiting.
+- the random installation identifier used for abuse prevention and rate limiting; and
+- recently shown prompt identifiers, so the service can avoid repeats.
 
 V2 does not collect or transmit browsing history, page contents, names, email addresses, precise location, advertising identifiers, financial information, or authentication credentials.
 
@@ -21,9 +22,11 @@ Requests are sent over HTTPS to a V2 Cloudflare Worker. Cloudflare provides requ
 
 Generated prompts are cached by category and shared across users. V2 does not store the random installation identifier in the prompt cache.
 
+For batch quality checks, the Worker sends generated candidate prompts and their preset category to OpenAI. This maintenance request does not include a user's installation identifier, notification history, or browsing data.
+
 ## Purpose and sharing
 
-Data is used only to deliver prompts, prevent abuse, diagnose failures, and maintain the service. V2 does not sell data, use it for advertising, or share it except with Cloudflare as necessary to provide the service or when required by law.
+Data is used only to deliver prompts, prevent abuse, diagnose failures, and maintain the service. V2 does not sell data or use it for advertising. Cloudflare processes extension requests; OpenAI receives generated candidate prompts and categories for quality checks, as described above. Data may also be disclosed when required by law.
 
 The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.
 

@@ -17,19 +17,25 @@ An approved V2 prompt must:
 
 ## Approval pipeline
 
-1. The generator proposes more candidates than the required batch size.
+1. The generator proposes candidates, with a small allowance for filtering.
 2. Deterministic validation rejects malformed, unsafe, attributed, duplicated, or overly similar text.
-3. The surviving 20-prompt candidate batch is written to `QUOTE_STAGING` with status
-   `pending_evaluation`.
-4. A separate evaluator model scores every prompt from 1–5 for relevance, actionability,
-   clarity, tone, safety, and originality.
+   Follow-up calls request the missing number plus an allowance and check duplicates against
+   earlier candidates.
+3. Candidate prompts are written to `QUOTE_STAGING` before evaluation.
+4. OpenAI GPT-5.4 scores each candidate in groups of up to five from 1–5 for
+   relevance, actionability, clarity, tone, safety, and originality. Any malformed or
+   missing evaluation fails the whole batch.
 5. A prompt passes only when safety is 5, every other score is at least 4, the evaluator says
    it passes, and the deterministic rules still pass.
-6. All 20 prompts must pass before the batch is copied to `QUOTE_CACHE`.
-7. Rejected or failed attempts remain in `QUOTE_STAGING` for audit. The existing production
-   cache is never replaced by a failed batch.
+6. Approved prompts are retained across up to three generation attempts; rejected prompts
+   are excluded. All 20 prompts must pass before the batch is copied to `QUOTE_CACHE`.
+7. Rejected, incomplete, or failed batches remain in `QUOTE_STAGING` for audit. A later request
+   starts a new batch. The existing production cache is never replaced by a failed batch.
 
 Public `/quote` requests read only from `QUOTE_CACHE`; they cannot access staging or invoke AI.
+The Worker sends staged candidate prompts and their category to the OpenAI API for evaluation;
+the API key is stored as the `OPENAI_API_KEY` Worker secret. OpenAI usage is billed separately
+from Cloudflare Workers AI generation.
 
 ## Human oversight
 

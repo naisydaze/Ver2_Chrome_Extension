@@ -64,11 +64,18 @@ async function showReminderIfAllowed() {
     const categories = preferences.categories.filter((category) => category.enabled);
     const category = categories[Math.floor(Math.random() * categories.length)];
 
+    let quoteObj;
     try {
-        const quoteObj = await fetchQuote(category.topic);
+        quoteObj = await fetchQuote(category.topic);
+    } catch (error) {
+        console.error('Unable to obtain a reminder prompt:', error);
+        return;
+    }
+
+    try {
         await chrome.notifications.create({
             type: 'basic',
-            iconUrl: 'harmony.png',
+            iconUrl: chrome.runtime.getURL('assets/icons/icon-128.png'),
             title: `V2 Prompt · ${category.name}`,
             message: quoteObj.quote,
             priority: 1
