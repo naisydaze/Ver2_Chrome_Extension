@@ -1,179 +1,107 @@
-# 🌱 V2 — Your Self-Improvement Chrome Companion  
-*Version 2 — the next version of you.*
+# V2 — Your Self-Improvement Companion
 
-**[→ Try it on Chrome (dev mode)](chrome://extensions/)(link coming soon!)**  
-**[→ GitHub Repo](https://github.com/naisydaze/Ver2_Chrome_Extension)**
+*Small reminders for the person you're becoming.*
 
----
+V2 is a Chrome extension that delivers gentle prompts throughout your day. Choose a category, set a reminder interval, and make space for a moment of reflection—whether you're working, studying, coding, or taking a break.
 
-## ✨ What is V2?
+[View V2 in the Chrome Web Store](https://chromewebstore.google.com/detail/igonfkldenaeailncliahdblmcmnnoci) · [Privacy policy](PRIVACY.md) · [Prompt quality policy](worker/QUALITY_POLICY.md)
 
-**V2** is a motivational prompt extension for Chrome, designed to align you with the best version of yourself. It’s a lightweight productivity companion that sends gentle, timely nudges across five preset categories: *Health*, *Career*, *Code*, *Wisdom*, and *Motivation*.
+![V2 settings page showing prompt categories and notification controls](store-assets/v2-settings-1280x800.png)
 
-Whether you're coding, studying, or simply navigating your day, V2 offers quiet moments of insight to help you reset and refocus.
+## What it does
 
----
+- **Five categories:** Health, Career, Code, Wisdom, and Motivation.
+- **Flexible reminders:** Choose a preset interval or set your own.
+- **Active hours:** Limit notifications to the times that work for you.
+- **Deep Work mode:** Pause reminders temporarily when you need to focus.
+- **Offline fallback:** Use bundled prompts when the online service is unavailable.
+- **Local settings:** Save preferences and recently shown prompt identifiers in Chrome's local storage.
 
-## 🌟 Features
+V2 includes AI-generated prompts. Prompts are served from a shared cache; a reminder does not call an AI model. Each installation tracks the prompts it has seen within a batch to reduce repetition.
 
-- 🔁 **Custom Notification Intervals**  
-  Get reminded every 5 minutes, 3 hours, or whenever you want — with dropdown + custom interval support.
+## How it works
 
-- 💬 **Prompt Categories**
-  Choose from *Health*, *Career*, *Code*, *Wisdom*, and *Motivation*.
+The extension schedules reminders using Chrome alarms and displays them with Chrome notifications. For each reminder it requests a prompt from a Cloudflare Worker. If that request fails, it selects a bundled local prompt instead.
 
-- 📥 **Resilient Quote Delivery**
-  Bundled category-based quotes work offline, with an optional HTTPS backend integration for generated content.
+An administrator can refresh a category's shared batch through a protected endpoint:
 
-- 🧘‍♀️ **Do Not Disturb Mode**  
-  Start a timed deep-work block and resume notifications automatically when it ends.
+1. Cloudflare Workers AI generates candidate prompts.
+2. Rules check format, length, duplicates, attribution, and certain unsafe language.
+3. Candidates are stored in a separate staging namespace. GPT-5.4 evaluates them for relevance, usefulness, clarity, tone, safety, and originality.
+4. Passing prompts are retained and rejected prompts can be replaced, within a limited number of attempts. A batch is promoted to the shared cache only when all required prompts pass.
 
-- 🗂️ **Goal Categories & Active Hours**
-  Organize prompts across goals such as Health, Career, and Code, and limit reminders to your preferred hours.
+The current configuration uses batches of 20 and manual administrator-triggered refreshes. AI checks reduce risk but cannot guarantee every prompt is appropriate or original. See the [quality policy](worker/QUALITY_POLICY.md) for the criteria and limitations. Existing cache entries may predate the current evaluation workflow.
 
-- 🖼️ **Minimal UI**  
-  Designed with clean HTML, inline CSS, and optional TailwindCSS.
+## Technology
 
-- 💾 **Local Persistence**
-  Categories, active hours, and deep-work blocks persist locally using `chrome.storage.local`.
+- **Extension:** JavaScript, HTML, CSS, and Chrome's Manifest V3 APIs.
+- **Backend:** Cloudflare Workers and Workers KV.
+- **Generation and evaluation:** Cloudflare Workers AI and OpenAI's GPT-5.4 API.
 
----
+## Run locally
 
-## 🧪 Screenshots (Coming Soon!)
+1. Clone this repository:
 
----
-
-## 🛠 Tech Stack
-
-| Area | Tech |
-|------|------|
-| Frontend | Vanilla JS, HTML5 |
-| Chrome APIs | `chrome.notifications`, `chrome.storage.local`, `chrome.alarms` |
-| Backend | Python (BeautifulSoup for scraping, for fallback quote caching) |
-| Content | Bundled local quotes with an optional server-side AI backend |
-
----
-
-## 🚀 Getting Started
-
-### 🧩 Install Extension (Dev Mode)
-
-1. Clone the repo:
    ```bash
    git clone https://github.com/naisydaze/Ver2_Chrome_Extension.git
    cd Ver2_Chrome_Extension
    ```
 
-### Optional AI prompt backend
+2. Open `chrome://extensions` in Chrome and turn on **Developer mode**.
+3. Click **Load unpacked** and select the repository folder.
+4. Open V2's settings, choose a category and interval, and allow Chrome notifications if prompted.
 
-The extension works offline with bundled prompts. The `worker/` project adds
-original AI-generated prompts without exposing an API key in the extension.
-Cloudflare Workers AI generates a protected maintenance batch, GPT-5.4 evaluates it via the OpenAI API, Workers KV caches it, and
-the extension falls back to its bundled prompts whenever the backend is
-unavailable.
+An unpacked extension can have a different ID from the published extension. The configured Worker accepts only its allowed extension origins, so a different local ID may use bundled fallback prompts unless the Worker configuration is updated.
 
-1. Create a Cloudflare account, then install and authenticate Wrangler:
+## Develop the Worker
 
-   ```bash
-   cd worker
-   npm install
-   npx wrangler login
-   ```
+The repository's Worker configuration points to V2's existing Cloudflare resources. To deploy your own instance, create separate `QUOTE_CACHE` and `QUOTE_STAGING` KV namespaces in your Cloudflare account and replace their IDs in `worker/wrangler.jsonc`. Configure the allowed extension origin, the Worker URL in `src/utils/quoteClient.js`, and the corresponding host permission in `manifest.json` for your deployment.
 
-2. Find the extension ID on `chrome://extensions`. Replace
-   `REPLACE_WITH_YOUR_EXTENSION_ID` in `worker/wrangler.jsonc` with that ID.
+From the `worker` directory, install dependencies and authenticate Wrangler:
 
-3. Complete Workers onboarding in the Cloudflare dashboard and choose your
-   account's `workers.dev` subdomain. Workers AI always uses a remote binding,
-   even while the Worker code runs locally, so this one-time account setup is
-   required before testing AI generation.
+```bash
+cd worker
+npm install
+npx wrangler login
+```
 
-4. Run the Worker locally and test its health endpoint:
+Set `ADMIN_TOKEN` for protected maintenance requests and `OPENAI_API_KEY` for evaluation as Worker secrets. Never put either secret in the extension or commit it to Git. GPT-5.4 evaluation uses the paid OpenAI API, separately from Cloudflare Workers AI.
 
-   ```bash
-   npm run dev
-   curl http://localhost:8787/health
-   ```
+```bash
+npx wrangler secret put ADMIN_TOKEN
+npx wrangler secret put OPENAI_API_KEY
+npm run deploy
+```
 
-   If Wrangler offers to switch to local mode, that mode can test `/health` and
-   the unit tests, but it cannot execute the Workers AI binding.
+Generate a category batch from a trusted terminal, with `V2_ADMIN_TOKEN` set to the same value as `ADMIN_TOKEN`:
 
-5. Deploy it. Wrangler automatically provisions the KV namespace declared in
-   `wrangler.jsonc` and writes its generated ID back to that file:
+```bash
+curl "https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/admin/generate" \
+  -X POST \
+  -H "Authorization: Bearer $V2_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"category":"health"}'
+```
 
-   ```bash
-   npm run deploy
-   ```
+Inspect the latest staged result through the protected endpoint:
 
-6. Copy the resulting `https://...workers.dev/quote` URL into
-   `QUOTE_BACKEND_URL` in `src/utils/quoteClient.js`.
+```bash
+curl "https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/admin/staging?category=health" \
+  -H "Authorization: Bearer $V2_ADMIN_TOKEN"
+```
 
-7. Add only that Worker origin to `host_permissions` in `manifest.json`:
+Run the automated tests from `worker`:
 
-   ```json
-   "host_permissions": ["https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/*"]
-   ```
+```bash
+npm test
+```
 
-8. Create a secret used only for protected cache refreshes:
-
-   ```bash
-   npx wrangler secret put ADMIN_TOKEN
-   ```
-
-   Create a separate OpenAI API key with access to GPT-5.4 and add it as a Worker secret:
-
-   ```bash
-   npx wrangler secret put OPENAI_API_KEY
-   ```
-
-   Evaluation sends generated prompts and category names to OpenAI. It uses the paid OpenAI
-   API, separately from Cloudflare Workers AI. Do not put either secret in the extension or Git.
-
-9. Deploy again, then generate all five preset caches from a trusted terminal:
-
-   ```bash
-   curl "https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/admin/generate" \
-     -X POST \
-     -H "Authorization: Bearer $V2_ADMIN_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{}'
-   ```
-
-   Set `V2_ADMIN_TOKEN` locally to the same secret entered into Wrangler. Never
-   put this secret in the extension or commit it to Git.
-
-   Generation retains approved candidates across up to three attempts, requesting only
-   the missing prompts plus a small allowance. Partial batches are saved in the separate
-   `QUOTE_STAGING` namespace for inspection. Deterministic rules check format, safety
-   language, attribution, duplicates, and batch diversity. Candidates are
-   staged before an independent evaluator scores category
-   relevance, actionability, clarity, tone, safety, and originality. Only a batch
-   in which every prompt passes is promoted to `QUOTE_CACHE`; rejected and failed
-   attempts remain in staging for audit.
-
-   Inspect the latest staged decision for a category with:
-
-   ```bash
-   curl "https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/admin/staging?category=health" \
-     -H "Authorization: Bearer $V2_ADMIN_TOKEN"
-   ```
-
-10. Reload the unpacked extension on `chrome://extensions`. The public
-    `/quote` endpoint only reads the cache and never invokes AI. Each extension
-    installation sees all prompts in a batch before beginning a new cycle.
-
-### Build the Chrome Web Store package
+To create a clean Chrome Web Store package from the repository root:
 
 ```bash
 ./scripts/build-extension.sh
 ```
 
-Upload `dist/v2-extension-1.1.0.zip`. The package intentionally excludes the
-Worker, development dependencies, screenshots, scraping scripts, and Git data.
+## Privacy
 
-Run the Worker unit tests at any time with:
-
-```bash
-cd worker
-npm test
-```
+V2 does not read browsing history or page contents. The extension sends the selected category, a random installation identifier, and recently shown prompt identifiers to the Worker when requesting a cached prompt. During administrator-triggered quality checks, generated candidate prompts and their category are sent to OpenAI. See the [privacy policy](PRIVACY.md) for details.
