@@ -48,18 +48,15 @@ function passingFlatEvaluation(count) {
     };
 }
 
-function mockOpenAI(t, makeEvaluation = () => passingEvaluation(5)) {
-    return t.mock.method(globalThis, 'fetch', async (_url, options) => {
-        const body = JSON.parse(options.body);
-        assert.equal(body.model, 'gpt-5.4');
-        assert.equal(body.store, false);
-        const value = makeEvaluation();
-        return new Response(JSON.stringify({
-            status: 'completed',
-            output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value.response) }] }],
-            usage: { input_tokens: 100, output_tokens: 50 }
-        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+function mockWorkersEvaluator(t, env, makeEvaluation = () => passingEvaluation(5)) {
+    const generator = env.AI.run.bind(env.AI);
+    const calls = [];
+    t.mock.method(env.AI, 'run', async (model, options) => {
+        if (model !== '@cf/meta/llama-3.3-70b-instruct-fp8-fast') return generator(model, options);
+        calls.push(options);
+        return makeEvaluation();
     });
+    return calls;
 }
 
 test('normalizes categories used as cache keys', () => {
@@ -93,6 +90,7 @@ test('deterministic policy rejects unsafe claims and attributed quotations', () 
     assert.equal(validatePrompt('This routine will always cure your anxiety and guarantee perfect health.').valid, false);
     assert.equal(validatePrompt('Success is final, courage is everything. — Famous Person').valid, false);
     assert.equal(validatePrompt(samplePrompts[0]).valid, true);
+    assert.equal(validatePrompt('What habits can you break to reduce your risk of chronic diseases?').valid, false);
 });
 
 test('accepts the evaluator flat-array response shape', () => {
@@ -135,14 +133,12 @@ test('allows both configured extension origins and rejects other origins', async
 });
 
 test('protects generation and serves every cached prompt before repeating', async (t) => {
-    const evaluator = mockOpenAI(t);
     const values = new Map();
     const stagingValues = new Map();
     let aiCalls = 0;
     const env = {
         ALLOWED_EXTENSION_ORIGIN: 'chrome-extension://test-id',
         ADMIN_TOKEN: 'test-secret',
-        OPENAI_API_KEY: 'test-api-key',
         BATCH_SIZE: '5',
         AI: {
             async run(_model, options) {
@@ -173,6 +169,7 @@ test('protects generation and serves every cached prompt before repeating', asyn
         INSTALL_RATE_LIMITER: { async limit() { return { success: true }; } },
         IP_RATE_LIMITER: { async limit() { return { success: true }; } }
     };
+    const evaluator = mockWorkersEvaluator(t, env);
     const makeRequest = (seenIds = []) => new Request('https://example.test/quote', {
         method: 'POST',
         headers: {
@@ -199,9 +196,9 @@ test('protects generation and serves every cached prompt before repeating', asyn
     }), env);
     assert.equal(generated.status, 200);
     assert.equal(aiCalls, 1);
-    assert.equal(evaluator.mock.calls.length, 1);
+    assert.equal(evaluator.length, 1);
     const generatedBody = await generated.json();
-    assert.equal(generatedBody.generated[0].qualityPolicyVersion, '2026-11-02-v1');
+    assert.equal(generatedBody.generated[0].qualityPolicyVersion, '2026-11-04-v3');
 
     const staged = await worker.fetch(new Request('https://example.test/admin/staging?category=health', {
         headers: { 'Authorization': 'Bearer test-secret' }
@@ -268,11 +265,9 @@ test('keeps evaluator-rejected batches in staging and out of public cache', asyn
     rejectedEvaluation.response.evaluations[2].pass = false;
     rejectedEvaluation.response.evaluations[2].scores.tone = 2;
     rejectedEvaluation.response.evaluations[2].reasons = ['Tone is too forceful.'];
-    mockOpenAI(t, () => rejectedEvaluation);
 
     const env = {
         ADMIN_TOKEN: 'test-secret',
-        OPENAI_API_KEY: 'test-api-key',
         BATCH_SIZE: '5',
         AI: {
             async run(_model, options) {
@@ -289,6 +284,7 @@ test('keeps evaluator-rejected batches in staging and out of public cache', asyn
             async put(key, value) { stagingValues.set(key, value); }
         }
     };
+    mockWorkersEvaluator(t, env, () => rejectedEvaluation);
 
     const response = await worker.fetch(new Request('https://example.test/admin/generate', {
         method: 'POST',
@@ -311,16 +307,16 @@ test('keeps evaluator-rejected batches in staging and out of public cache', asyn
 });
 
 test('retains valid prompts across attempts and stages an incomplete batch', async (t) => {
-    mockOpenAI(t, () => passingEvaluation(3));
     const staged = new Map();
     const cache = new Map();
     let calls = 0;
     const env = {
-        ADMIN_TOKEN: 'test-secret', OPENAI_API_KEY: 'test-api-key', BATCH_SIZE: '5',
+        ADMIN_TOKEN: 'test-secret', BATCH_SIZE: '5',
         AI: { async run() { calls += 1; return { response: JSON.stringify(samplePrompts.slice(0, 3)) }; } },
         QUOTE_STAGING: { async put(key, value) { staged.set(key, value); } },
         QUOTE_CACHE: { async put(key, value) { cache.set(key, value); } }
     };
+    mockWorkersEvaluator(t, env, () => passingEvaluation(3));
     const request = new Request('https://example.test/admin/generate', {
         method: 'POST', headers: { Authorization: 'Bearer test-secret', 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'code' })
@@ -337,12 +333,11 @@ test('retains valid prompts across attempts and stages an incomplete batch', asy
 
 test('combines distinct prompts from separate attempts before evaluation', async (t) => {
     let evaluationCalls = 0;
-    mockOpenAI(t, () => passingEvaluation(++evaluationCalls === 1 ? 3 : 2));
     const staged = new Map();
     const cache = new Map();
     let generationCalls = 0;
     const env = {
-        ADMIN_TOKEN: 'test-secret', OPENAI_API_KEY: 'test-api-key', BATCH_SIZE: '5',
+        ADMIN_TOKEN: 'test-secret', BATCH_SIZE: '5',
         AI: { async run(_model, options) {
             if (options.messages[0].content.includes('independent quality evaluator')) return passingEvaluation(5);
             generationCalls += 1;
@@ -351,6 +346,7 @@ test('combines distinct prompts from separate attempts before evaluation', async
         QUOTE_STAGING: { async put(key, value) { staged.set(key, value); } },
         QUOTE_CACHE: { async put(key, value) { cache.set(key, value); } }
     };
+    mockWorkersEvaluator(t, env, () => passingEvaluation(++evaluationCalls === 1 ? 3 : 2));
     const request = new Request('https://example.test/admin/generate', {
         method: 'POST', headers: { Authorization: 'Bearer test-secret', 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'code' })
@@ -363,22 +359,22 @@ test('combines distinct prompts from separate attempts before evaluation', async
 
 test('replaces rejected prompts while retaining previously approved prompts', async (t) => {
     let evaluations = 0;
-    mockOpenAI(t, () => {
-        evaluations += 1;
-        const value = passingEvaluation(evaluations === 1 ? 5 : 1);
-        if (evaluations === 1) value.response.evaluations[2].pass = false;
-        return value;
-    });
     const cache = new Map();
     const staged = new Map();
     let generations = 0;
     const replacement = 'Explore a new skill through a short focused practice session today.';
     const env = {
-        ADMIN_TOKEN: 'test-secret', OPENAI_API_KEY: 'test-api-key', BATCH_SIZE: '5',
+        ADMIN_TOKEN: 'test-secret', BATCH_SIZE: '5',
         AI: { async run() { generations += 1; return { response: JSON.stringify(generations === 1 ? samplePrompts : [samplePrompts[2], replacement]) }; } },
         QUOTE_STAGING: { async put(key, value) { staged.set(key, value); } },
         QUOTE_CACHE: { async put(key, value) { cache.set(key, value); } }
     };
+    mockWorkersEvaluator(t, env, () => {
+        evaluations += 1;
+        const value = passingEvaluation(evaluations === 1 ? 5 : 1);
+        if (evaluations === 1) value.response.evaluations[2].pass = false;
+        return value;
+    });
     const response = await worker.fetch(new Request('https://example.test/admin/generate', {
         method: 'POST', headers: { Authorization: 'Bearer test-secret', 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'code' })
@@ -393,7 +389,6 @@ test('replaces rejected prompts while retaining previously approved prompts', as
 });
 
 test('evaluates large batches in groups and promotes only after all groups pass', async (t) => {
-    const evaluator = mockOpenAI(t);
     const morePrompts = [
         'Review yesterday’s work and identify one practical lesson for tomorrow.',
         'Choose a manageable project and break the first milestone into steps.',
@@ -404,7 +399,7 @@ test('evaluates large batches in groups and promotes only after all groups pass'
     const staged = new Map();
     const cache = new Map();
     const env = {
-        ADMIN_TOKEN: 'test-secret', OPENAI_API_KEY: 'test-api-key', BATCH_SIZE: '10',
+        ADMIN_TOKEN: 'test-secret', BATCH_SIZE: '10',
         AI: { async run(_model, options) {
             if (options.messages[0].content.includes('independent quality evaluator')) {
                 return passingEvaluation(5);
@@ -414,23 +409,27 @@ test('evaluates large batches in groups and promotes only after all groups pass'
         QUOTE_STAGING: { async put(key, value) { staged.set(key, value); } },
         QUOTE_CACHE: { async put(key, value) { cache.set(key, value); } }
     };
+    const evaluator = mockWorkersEvaluator(t, env);
     const response = await worker.fetch(new Request('https://example.test/admin/generate', {
         method: 'POST', headers: { Authorization: 'Bearer test-secret', 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'code' })
     }), env);
     assert.equal(response.status, 200);
-    assert.equal(evaluator.mock.calls.length, 2);
+    assert.equal(evaluator.length, 2);
     const record = JSON.parse(staged.get(staged.get('staging-latest:v1:code')));
     assert.deepEqual(record.evaluation.evaluations.map((item) => item.index), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     assert.equal(JSON.parse(cache.get('prompt-batch:v1:code')).prompts.length, 10);
 });
 
-test('missing OpenAI credentials keeps a full batch in staging without promotion', async () => {
+test('an unavailable Workers AI evaluator keeps a batch in staging without promotion', async () => {
     const staged = new Map();
     let promoted = false;
     const env = {
         ADMIN_TOKEN: 'test-secret', BATCH_SIZE: '5',
-        AI: { async run() { return { response: JSON.stringify(samplePrompts) }; } },
+        AI: { async run(model) {
+            if (model === '@cf/meta/llama-3.3-70b-instruct-fp8-fast') throw new Error('Workers AI unavailable');
+            return { response: JSON.stringify(samplePrompts) };
+        } },
         QUOTE_STAGING: { async put(key, value) { staged.set(key, value); } },
         QUOTE_CACHE: { async put() { promoted = true; } }
     };
@@ -439,7 +438,7 @@ test('missing OpenAI credentials keeps a full batch in staging without promotion
         body: JSON.stringify({ category: 'code' })
     }), env);
     assert.equal(response.status, 503);
-    assert.match((await response.json()).failures[0].error, /OPENAI_API_KEY/);
+    assert.match((await response.json()).failures[0].error, /Workers AI unavailable/);
     assert.equal(promoted, false);
     assert.equal(JSON.parse(staged.get(staged.get('staging-latest:v1:code'))).status, 'evaluation_error');
 });

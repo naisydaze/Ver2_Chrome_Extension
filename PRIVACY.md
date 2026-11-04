@@ -6,11 +6,11 @@ V2 provides configurable self-improvement prompts through Chrome notifications.
 
 ## Data handled by the extension
 
-V2 stores notification preferences, active hours, deep-work status, recently shown prompt identifiers, and a random installation identifier in `chrome.storage.local` on the user's device.
+V2 stores notification preferences, active hours, deep-work status, recently shown prompt identifiers, up to 20 recent prompt texts with their categories and times, and a random installation identifier in `chrome.storage.local` on the user's device. Recent prompt texts can be cleared from the settings page and are not sent to the service.
 
 When requesting a cached AI-generated prompt, V2 sends only:
 
-- one selected preset category (Health, Career, Code, Wisdom, or Motivation);
+- one selected preset category (Health, Career, or Motivation);
 - the random installation identifier used for abuse prevention and rate limiting; and
 - recently shown prompt identifiers, so the service can avoid repeats.
 
@@ -22,11 +22,11 @@ Requests are sent over HTTPS to a V2 Cloudflare Worker. Cloudflare provides requ
 
 Generated prompts are cached by category and shared across users. V2 does not store the random installation identifier in the prompt cache.
 
-For batch quality checks, the Worker sends generated candidate prompts and their preset category to OpenAI. This maintenance request does not include a user's installation identifier, notification history, or browsing data.
+For batch quality checks, the current Worker code uses Cloudflare Workers AI. An earlier deployed version uses OpenAI to evaluate generated candidate prompts and their preset category; it may continue doing so until the updated Worker is deployed. These maintenance requests do not include a user's installation identifier, notification history, or browsing data.
 
 ## Purpose and sharing
 
-Data is used only to deliver prompts, prevent abuse, diagnose failures, and maintain the service. V2 does not sell data or use it for advertising. Cloudflare processes extension requests; OpenAI receives generated candidate prompts and categories for quality checks, as described above. Data may also be disclosed when required by law.
+Data is used only to deliver prompts, prevent abuse, diagnose failures, and maintain the service. V2 does not sell data or use it for advertising. Cloudflare processes extension requests and the current quality-check workflow; OpenAI may process generated candidate prompts and categories in an earlier deployment, as described above. Data may also be disclosed when required by law.
 
 The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.
 
@@ -34,7 +34,7 @@ The use of information received from Google APIs will adhere to the Chrome Web S
 
 Settings are stored locally on each device. On upgrade from version 1.0, V2 reads the previous settings from Chrome's sync storage; subsequent settings changes are stored locally rather than synchronized. V2 does not delete the old sync values during migration.
 
-Resetting preferences restores default settings. The installation identifier and prompt history are separate from preferences and remain until extension storage is cleared or the extension is removed. Cached prompts contain no user identifiers. Cloudflare retains platform logs according to the account's configured Cloudflare retention settings.
+Resetting preferences restores default settings. Recent prompt texts can be cleared from the settings page. The installation identifier and previously shown prompt identifiers are separate from preferences and remain until extension storage is cleared or the extension is removed. Cached prompts contain no user identifiers. Cloudflare retains platform logs according to the account's configured Cloudflare retention settings.
 
 If the online service is unavailable, V2 uses prompts bundled with the extension.
 

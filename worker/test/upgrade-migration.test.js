@@ -29,6 +29,23 @@ test('saving one non-default category does not silently re-enable Health', () =>
     assert.deepEqual(preferences.categories.filter((category) => category.enabled).map((category) => category.id), ['motivation']);
 });
 
+test('keeps supported selections and asks users to review removed local categories', () => {
+    const preferences = normalizePreferences({ categories: [
+        { id: 'career', enabled: true }, { id: 'wisdom', enabled: true }, { id: 'code', enabled: false }
+    ] });
+    assert.deepEqual(preferences.categories.map((category) => category.id), ['health', 'career', 'motivation']);
+    assert.deepEqual(preferences.categories.filter((category) => category.enabled).map((category) => category.id), ['career']);
+    assert.equal(preferences.upgradeReview.categoryChanged, true);
+});
+
+test('maps previous Failure and Success selections to Motivation and requests review', async () => {
+    for (const promptCategory of ['failure', 'success']) {
+        const { preferences } = await migrate({ promptCategory, showPreview: true });
+        assert.deepEqual(preferences.categories.filter((category) => category.enabled).map((category) => category.id), ['motivation']);
+        assert.equal(preferences.upgradeReview.categoryChanged, true);
+    }
+});
+
 test('pauses for review when the old category is no longer offered', async () => {
     for (const promptCategory of ['failure', 'my custom topic']) {
         const { preferences, sync } = await migrate({ promptCategory, notificationInterval: 1 });

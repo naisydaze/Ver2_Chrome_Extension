@@ -4,6 +4,35 @@ import {
     getPreferences,
     savePreferences
 } from '../utils/preferences.js';
+import { clearRecentPrompts, getRecentPrompts, RECENT_PROMPTS_KEY } from '../utils/recentPrompts.js';
+
+async function renderRecentPrompts() {
+    const prompts = globalThis.chrome?.storage?.local ? await getRecentPrompts() : [];
+    const list = document.getElementById('recent-list');
+    list.replaceChildren();
+    document.getElementById('recent-empty').hidden = prompts.length > 0;
+    document.getElementById('clear-recent').disabled = prompts.length === 0;
+    for (const item of prompts) {
+        const entry = document.createElement('li');
+        const quote = document.createElement('p');
+        quote.textContent = item.quote;
+        const details = document.createElement('span');
+        details.textContent = `${item.category} · ${new Date(item.shownAt).toLocaleString()}`;
+        entry.append(quote, details);
+        list.append(entry);
+    }
+}
+
+function selectTab(id, focus = false) {
+    for (const name of ['settings', 'recent']) {
+        const selected = name === id;
+        const tab = document.getElementById(`${name}-tab`);
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        document.getElementById(`${name}-panel`).hidden = !selected;
+        if (selected && focus) tab.focus();
+    }
+}
 
 function renderCategories(categories) {
     const container = document.getElementById('category-options');
@@ -41,13 +70,31 @@ function toggleCustomInterval() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    for (const name of ['settings', 'recent']) {
+        const tab = document.getElementById(`${name}-tab`);
+        tab.addEventListener('click', () => selectTab(name));
+        tab.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                event.preventDefault();
+                selectTab(name === 'settings' ? 'recent' : 'settings', true);
+            }
+        });
+    }
+    await renderRecentPrompts();
+    document.getElementById('clear-recent').addEventListener('click', async () => {
+        await clearRecentPrompts();
+        await renderRecentPrompts();
+    });
+    globalThis.chrome?.storage?.onChanged?.addListener((changes, namespace) => {
+        if (namespace === 'local' && changes[RECENT_PROMPTS_KEY]) void renderRecentPrompts();
+    });
     const preferences = await getPreferences();
     const { notifications } = preferences;
 
     const upgradeNotice = document.getElementById('upgrade-notice');
     const notices = [];
     if (preferences.upgradeReview?.categoryChanged) {
-        notices.push('One or more of your previous categories are no longer available. Please review the categories selected below.');
+        notices.push('Categories have changed. Failure and Success are now covered under Motivation; Code, Wisdom and custom categories are no longer available. Please review your selection.');
     }
     if (preferences.upgradeReview?.previewChanged) {
         notices.push('V2 now shows the full prompt in notifications; the option to hide previews has been removed.');
@@ -68,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('save-settings').addEventListener('click', async () => {
         const categories = readCategories();
         if (!categories.length) {
-            alert('Select or enter at least one goal category.');
+            alert('Select at least one goal category.');
             return;
         }
 

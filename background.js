@@ -1,4 +1,5 @@
 import { fetchQuote } from './src/utils/quoteClient.js';
+import { saveRecentPrompt } from './src/utils/recentPrompts.js';
 import {
     PREFERENCES_KEY,
     getPreferences,
@@ -85,6 +86,11 @@ async function showReminderIfAllowed() {
             message: quoteObj.quote,
             priority: 1
         });
+        try {
+            await saveRecentPrompt(quoteObj.quote, category.name);
+        } catch (error) {
+            console.warn('Unable to save recent prompt:', error);
+        }
     } catch (error) {
         console.error('Unable to create reminder notification:', error);
     }

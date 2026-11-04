@@ -9,6 +9,13 @@
 	"ai": {
 		"binding": "AI"
 	},
+	"triggers": {
+		"crons": ["15 0,12 * * *"]
+	},
+	"durable_objects": {
+		"bindings": [{ "name": "SCHEDULE_GUARD", "class_name": "ScheduleGuard" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["ScheduleGuard"] }],
 	"kv_namespaces": [
 		{
 			"binding": "QUOTE_CACHE",
@@ -39,7 +46,7 @@
 	],
 	"vars": {
 		"ALLOWED_EXTENSION_ORIGIN": "chrome-extension://igonfkldenaeailncliahdblmcmnnoci",
-		"DEV_EXTENSION_ORIGIN": "chrome-extension://ejdjdglalnidhpoopaokkncmkdcnnalp",
+		"DEV_EXTENSION_ORIGIN": "chrome-extension://afoiegbmhabcempeoklhjkgaaacdcoml",
 		"BATCH_SIZE": "20"
 	}
 }

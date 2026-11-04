@@ -139,6 +139,17 @@
       font-size: 0.9em;
       line-height: 1.45;
     }
+    .tabs { display: flex; gap: 6px; margin: 0 0 22px; border-bottom: 1px solid #e2e8f0; }
+    .tabs button { background: transparent; border-radius: 0; border-bottom: 3px solid transparent; box-shadow: none; color: #64748b; padding: 10px 4px; }
+    .tabs button[aria-selected="true"] { color: #4f46e5; border-bottom-color: #6366f1; }
+    .tabs button:hover { background: #f8fafc; }
+    .tabs button:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+    #recent-list { list-style: none; margin: 0 0 16px; padding: 0; }
+    #recent-list li { padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+    #recent-list p { margin: 0 0 5px; line-height: 1.45; overflow-wrap: anywhere; }
+    #recent-list span, #recent-empty, .recent-hint { color: #64748b; font-size: .85em; }
+    #clear-recent { padding: 10px 16px; }
+    #clear-recent:disabled { opacity: .5; cursor: default; }
   </style>
 </head>
 <body>
@@ -153,6 +164,11 @@
     </p>
   </div>     
     <div id="upgrade-notice" class="upgrade-notice" role="status" hidden></div>
+    <div class="tabs" role="tablist" aria-label="V2 pages">
+      <button type="button" id="settings-tab" role="tab" aria-selected="true" aria-controls="settings-panel">Settings</button>
+      <button type="button" id="recent-tab" role="tab" aria-selected="false" aria-controls="recent-panel" tabindex="-1">Recent prompts</button>
+    </div>
+    <section id="settings-panel" role="tabpanel" aria-labelledby="settings-tab">
     <h1>Goal Categories</h1>
     <label>Choose the topics you want prompts for:</label>
     <div id="category-options" class="category-grid"></div>
@@ -190,6 +206,14 @@
       <button id="save-settings">Save</button>
       <button class="button" id="reset-btn">Reset</button>
     </div>
+    </section>
+    <section id="recent-panel" role="tabpanel" aria-labelledby="recent-tab" tabindex="0" hidden>
+      <h1>Recent prompts</h1>
+      <p class="recent-hint">Your last 20 reminders are stored on this device.</p>
+      <p id="recent-empty">Your recent reminders will appear here.</p>
+      <ul id="recent-list"></ul>
+      <button id="clear-recent" type="button">Clear recent prompts</button>
+    </section>
   </div>
   <script type="module" src="src/settings/settings.js"></script>
 </body>

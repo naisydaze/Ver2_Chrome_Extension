@@ -7,6 +7,7 @@ const QUOTE_BACKEND_URL = 'https://v2-quote-api.shanaisyz.workers.dev/quote';
 const REQUEST_TIMEOUT_MS = 8000;
 const INSTALL_ID_KEY = 'v2InstallId';
 const QUOTE_HISTORY_KEY = 'v2QuoteHistory';
+const MAX_PROMPT_HISTORY = 50;
 
 function validBackendQuote(value) {
     return value
@@ -31,7 +32,7 @@ async function fetchBackendQuote(category) {
             'Content-Type': 'application/json',
             'X-V2-Install-ID': installId
         },
-        body: JSON.stringify({ category, seenIds: historyEntry.seenIds.slice(-20) }),
+        body: JSON.stringify({ category, seenIds: historyEntry.seenIds.slice(-MAX_PROMPT_HISTORY) }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     });
 
@@ -49,7 +50,7 @@ async function fetchBackendQuote(category) {
     if (typeof data.id === 'string') seenIds.push(data.id);
     history[category] = {
         batchId: data.batchId || historyEntry.batchId,
-        seenIds: [...new Set(seenIds)].slice(-20)
+        seenIds: [...new Set(seenIds)].slice(-MAX_PROMPT_HISTORY)
     };
     await chrome.storage.local.set({ [QUOTE_HISTORY_KEY]: history });
 

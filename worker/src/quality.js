@@ -1,4 +1,4 @@
-export const QUALITY_POLICY_VERSION = '2026-11-02-v1';
+export const QUALITY_POLICY_VERSION = '2026-11-04-v3';
 
 export const QUALITY_CRITERIA = Object.freeze({
     relevance: 'Clearly relates to the selected category.',
@@ -11,7 +11,7 @@ export const QUALITY_CRITERIA = Object.freeze({
 });
 
 const SCORE_NAMES = ['relevance', 'actionability', 'clarity', 'tone', 'safety', 'originality'];
-const UNSAFE_PATTERN = /\b(cure|cures|diagnose|diagnosis|medication|prescription|treatment|therapist|doctor|disease|disorder|suicide|self-harm|kill|violence|weapon|hate|worthless|lazy|guaranteed|always|never)\b/i;
+const UNSAFE_PATTERN = /\b(cure|cures|diagnose|diagnosis|medication|prescription|treatment|therapist|doctor|diseases?|disorders?|suicide|self-harm|kill|violence|weapon|hate|worthless|lazy|guaranteed|always|never)\b/i;
 const ATTRIBUTION_PATTERN = /\b(according to|once said|as .* said)\b|\s[—-]\s*[A-Z][\p{L}. '-]+$/iu;
 const URL_OR_MARKUP_PATTERN = /https?:\/\/|www\.|<[^>]+>|\[[^\]]+\]\([^\)]+\)|```/i;
 
@@ -47,8 +47,8 @@ export function validatePrompt(value) {
 
     if (typeof value !== 'string') reasons.push('not_string');
     if (/[\r\n\u0000-\u001f\u007f]/.test(String(value || ''))) reasons.push('control_or_multiline_text');
-    if (prompt.length < 10 || prompt.length > 180) reasons.push('invalid_character_length');
-    if (wordCount < 8 || wordCount > 22) reasons.push('invalid_word_count');
+    if (prompt.length < 10 || prompt.length > 100) reasons.push('invalid_character_length');
+    if (wordCount < 6 || wordCount > 12) reasons.push('invalid_word_count');
     if (sentenceEndings > 1) reasons.push('multiple_sentences');
     if (URL_OR_MARKUP_PATTERN.test(prompt)) reasons.push('url_or_markup');
     if (UNSAFE_PATTERN.test(prompt)) reasons.push('unsafe_or_absolute_language');
@@ -117,6 +117,7 @@ export function parsePromptBatch(result, expectedSize, existing = [], rejected =
     }
 
     for (const candidate of candidates) {
+        if (selected.length >= expectedSize) break;
         const validation = validatePrompt(candidate);
         if (!validation.valid) continue;
 

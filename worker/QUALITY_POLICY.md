@@ -1,6 +1,6 @@
 # V2 Prompt Quality Policy
 
-Policy version: `2026-11-02-v1`
+Policy version: `2026-11-04-v3`
 
 ## What “good” means
 
@@ -8,7 +8,7 @@ An approved V2 prompt must:
 
 1. **Be relevant** — aim to fit Health, Career, Code, Wisdom, or Motivation.
 2. **Be useful** — invite one realistic action or worthwhile moment of reflection.
-3. **Be clear** — express one standalone idea in 8–22 words and at most one sentence.
+3. **Be clear** — express one standalone idea in 6–12 words, at most 100 characters and at most one sentence.
 4. **Be supportive** — sound calm and encouraging without shame, pressure, or judgment.
 5. **Be safe** — avoid diagnosis, treatment, crisis guidance, hate, sexual or violent content,
    illegal advice, and guaranteed outcomes.
@@ -22,20 +22,26 @@ An approved V2 prompt must:
    Follow-up calls request the missing number plus an allowance and check duplicates against
    earlier candidates.
 3. Candidate prompts are written to `QUOTE_STAGING` before evaluation.
-4. OpenAI GPT-5.4 scores each candidate in groups of up to five from 1–5 for
+4. A separate Cloudflare Workers AI model scores each candidate in groups of up to five from 1–5 for
    relevance, actionability, clarity, tone, safety, and originality. Any malformed or
    missing evaluation fails the whole batch.
 5. A prompt passes only when safety is 5, every other score is at least 4, the evaluator says
    it passes, and the deterministic rules still pass.
-6. Approved prompts are retained across up to three generation attempts; rejected prompts
-   are excluded. All 20 prompts must pass before the batch is copied to `QUOTE_CACHE`.
-7. Rejected, incomplete, or failed batches remain in `QUOTE_STAGING` for audit. A later request
-   starts a new batch. The existing production cache is never replaced by a failed batch.
+6. A scheduled refresh requests up to 50 candidates per category and publishes the approved
+   subset only if at least 20 pass. It does not retry the category until the next schedule.
+   Manual administrator refreshes instead retain approved prompts across up to three generation
+   attempts and require a full batch of 20 before promotion.
+7. Rejected, incomplete, or failed batches remain in `QUOTE_STAGING` for audit. The existing
+   production cache is never replaced by an unsuccessful batch.
 
 Public `/quote` requests read only from `QUOTE_CACHE`; they cannot access staging or invoke AI.
-The Worker sends staged candidate prompts and their category to the OpenAI API for evaluation;
-the API key is stored as the `OPENAI_API_KEY` Worker secret. OpenAI usage is billed separately
-from Cloudflare Workers AI generation.
+The repository's generator and evaluator both use Cloudflare Workers AI. The deployed Worker
+may still use an earlier OpenAI-based evaluator until it is updated.
+
+The schedule runs at 00:15 and 12:15 UTC for Health, Career, and Motivation. A Durable Object
+guards against duplicate scheduled events, but this is not an account-wide neuron or spending
+limit: other Worker calls, manual refreshes, usage by other projects, and paid-plan overages
+must be monitored separately.
 
 ## Human oversight
 

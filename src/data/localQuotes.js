@@ -79,7 +79,9 @@ let previousQuoteId = null;
 export function getLocalQuote(category) {
     const normalizedCategory = String(category || '').trim().toLowerCase();
     const categoryKey = aliases[normalizedCategory] || normalizedCategory;
-    const candidates = LOCAL_QUOTES[categoryKey] || LOCAL_QUOTES.default;
+    const candidates = categoryKey === 'motivation'
+        ? [...LOCAL_QUOTES.motivation, ...LOCAL_QUOTES.failure, ...LOCAL_QUOTES.success]
+        : LOCAL_QUOTES[categoryKey] || LOCAL_QUOTES.default;
     const available = candidates.filter(({ id }) => id !== previousQuoteId);
     const selected = available[Math.floor(Math.random() * available.length)];
     previousQuoteId = selected.id;

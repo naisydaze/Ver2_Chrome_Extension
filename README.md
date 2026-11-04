@@ -6,15 +6,14 @@ V2 is a Chrome extension that delivers gentle prompts throughout your day. Choos
 
 [View V2 in the Chrome Web Store](https://chromewebstore.google.com/detail/igonfkldenaeailncliahdblmcmnnoci) · [Privacy policy](PRIVACY.md) · [Prompt quality policy](worker/QUALITY_POLICY.md)
 
-![V2 settings page showing prompt categories and notification controls](store-assets/v2-settings-1280x800.png)
-
 ## What it does
 
-- **Five categories:** Health, Career, Code, Wisdom, and Motivation.
+- **Three categories:** Health, Career, and Motivation.
 - **Flexible reminders:** Choose a preset interval or set your own.
 - **Active hours:** Limit notifications to the times that work for you.
 - **Deep Work mode:** Pause reminders temporarily when you need to focus.
 - **Offline fallback:** Use bundled prompts when the online service is unavailable.
+- **Recent prompts:** Revisit or clear your last 20 reminders in the settings page, stored locally on your device.
 - **Local settings:** Save preferences and recently shown prompt identifiers in Chrome's local storage.
 
 V2 includes AI-generated prompts. Prompts are served from a shared cache; a reminder does not call an AI model. Each installation tracks the prompts it has seen within a batch to reduce repetition.
@@ -23,18 +22,27 @@ V2 includes AI-generated prompts. Prompts are served from a shared cache; a remi
 
 The extension schedules reminders using Chrome alarms and displays them with Chrome notifications. For each reminder it requests a prompt from a Cloudflare Worker. If that request fails, it selects a bundled local prompt instead.
 
-An administrator can refresh a category's shared batch through a protected endpoint:
+The Worker can refresh shared batches on a schedule and through a protected administrator endpoint:
 
 1. Cloudflare Workers AI generates candidate prompts.
 2. Rules check format, length, duplicates, attribution, and certain unsafe language.
-3. Candidates are stored in a separate staging namespace. GPT-5.4 evaluates them for relevance, usefulness, clarity, tone, safety, and originality.
-4. Passing prompts are retained and rejected prompts can be replaced, within a limited number of attempts. A batch is promoted to the shared cache only when all required prompts pass.
+3. Candidates are stored in a separate staging namespace. A separate Cloudflare Workers AI model evaluates them for relevance, usefulness, clarity, tone, safety, and originality.
+4. Only prompts that pass are eligible for the shared cache. Scheduled batches are promoted only if at least 20 pass; otherwise the previous cache remains in use. Manual refreshes can replace rejected candidates within a limited number of attempts.
 
-The current configuration uses batches of 20 and manual administrator-triggered refreshes. AI checks reduce risk but cannot guarantee every prompt is appropriate or original. See the [quality policy](worker/QUALITY_POLICY.md) for the criteria and limitations. Existing cache entries may predate the current evaluation workflow.
+The scheduled workflow requests up to 50 candidates each for Health, Career, and Motivation twice daily at 00:15 and 12:15 UTC (8:15 a.m. and 8:15 p.m. Singapore time). Duplicate scheduled events are guarded against and failed scheduled batches are not automatically retried. Actual neuron use varies; the schedule does not impose an account-wide spending cap. The deployed Worker may differ until redeployed.
+
+AI checks reduce risk but cannot guarantee every prompt is appropriate or original. See the [quality policy](worker/QUALITY_POLICY.md) for the criteria and limitations. Existing cache entries may predate the current evaluation workflow.
 
 ## Version history
 
 ### 1.1.1
+
+- Saves up to 20 recent reminders locally for review in the settings page.
+- Requests shorter generated prompts for easier reading in notifications.
+
+- Limits categories to Health, Career, and Motivation. Users with removed selections are asked to review their settings; Failure and Success map to Motivation.
+- Tracks up to 50 prompts per category so users can cycle through a larger shared batch before repeats.
+- The accompanying Worker schedules Cloudflare-only batch checks twice daily for Health, Career, and Motivation.
 
 - Maps the previous **Motivational** category to **Motivation** when migrating version 1.0 settings.
 - Asks affected users to review their settings when their previous category is unavailable or they had hidden notification previews. Reminders remain paused until they save their choices.
@@ -56,7 +64,7 @@ The review notice applies when version 1.0 settings are first migrated. It does 
 
 - **Extension:** JavaScript, HTML, CSS, and Chrome's Manifest V3 APIs.
 - **Backend:** Cloudflare Workers and Workers KV.
-- **Generation and evaluation:** Cloudflare Workers AI and OpenAI's GPT-5.4 API.
+- **Generation and evaluation:** Cloudflare Workers AI.
 
 ## Run locally
 
@@ -85,11 +93,10 @@ npm install
 npx wrangler login
 ```
 
-Set `ADMIN_TOKEN` for protected maintenance requests and `OPENAI_API_KEY` for evaluation as Worker secrets. Never put either secret in the extension or commit it to Git. GPT-5.4 evaluation uses the paid OpenAI API, separately from Cloudflare Workers AI.
+Set `ADMIN_TOKEN` for protected maintenance requests as a Worker secret. Never put this secret in the extension or commit it to Git. Both the generator and the evaluator use Workers AI and consume Cloudflare neurons.
 
 ```bash
 npx wrangler secret put ADMIN_TOKEN
-npx wrangler secret put OPENAI_API_KEY
 npm run deploy
 ```
 
@@ -126,4 +133,4 @@ The resulting package is `dist/v2-extension-1.1.1.zip`.
 
 ## Privacy
 
-V2 does not read browsing history or page contents. The extension sends the selected category, a random installation identifier, and recently shown prompt identifiers to the Worker when requesting a cached prompt. During administrator-triggered quality checks, generated candidate prompts and their category are sent to OpenAI. See the [privacy policy](PRIVACY.md) for details.
+V2 does not read browsing history or page contents. The extension sends the selected category, a random installation identifier, and recently shown prompt identifiers to the Worker when requesting a cached prompt. The repository's evaluator uses Workers AI; a previous deployed version may still use OpenAI until the Worker is updated. See the [privacy policy](PRIVACY.md) for details.

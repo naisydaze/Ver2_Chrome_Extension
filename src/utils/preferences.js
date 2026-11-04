@@ -3,8 +3,6 @@ export const PREFERENCES_KEY = 'v2Preferences';
 export const PRESET_CATEGORIES = Object.freeze([
     { id: 'health', name: 'Health', topic: 'health' },
     { id: 'career', name: 'Career', topic: 'career' },
-    { id: 'code', name: 'Code', topic: 'code' },
-    { id: 'wisdom', name: 'Wisdom', topic: 'wisdom' },
     { id: 'motivation', name: 'Motivation', topic: 'motivation' }
 ]);
 
@@ -39,19 +37,25 @@ function validTime(value, fallback) {
 export function normalizePreferences(value) {
     const defaults = cloneDefaults();
     const storedCategories = Array.isArray(value?.categories) ? value.categories : [];
+    const removedSelected = storedCategories.some((category) => category?.enabled === true &&
+        [category.id, category.name, category.topic].some((name) =>
+            ['code', 'wisdom', 'software development', 'programming', 'coding', 'failure', 'success'].includes(String(name || '').trim().toLowerCase())));
     const categories = PRESET_CATEGORIES.map((preset, index) => {
         const stored = storedCategories.find((category) => {
             const storedTopic = String(category?.topic || '').toLowerCase();
             return category?.id === preset.id
                 || String(category?.name || '').toLowerCase() === preset.name.toLowerCase()
-                || storedTopic === preset.topic.toLowerCase()
-                || (preset.id === 'code' && ['software development', 'programming', 'coding'].includes(storedTopic));
+                || storedTopic === preset.topic.toLowerCase();
         });
         return {
             ...preset,
             enabled: stored ? stored.enabled === true : (storedCategories.length === 0 && defaults.categories[index].enabled)
         };
     });
+    if (storedCategories.some((category) => category?.enabled === true &&
+        [category.id, category.name, category.topic].some((name) => ['failure', 'success'].includes(String(name || '').trim().toLowerCase())))) {
+        categories.find((category) => category.id === 'motivation').enabled = true;
+    }
     if (!categories.some((category) => category.enabled)) {
         categories[0].enabled = true;
     }
@@ -63,7 +67,7 @@ export function normalizePreferences(value) {
         version: 1,
         categories,
         upgradeReview: {
-            categoryChanged: value?.upgradeReview?.categoryChanged === true,
+            categoryChanged: value?.upgradeReview?.categoryChanged === true || removedSelected,
             previewChanged: value?.upgradeReview?.previewChanged === true
         },
         notifications: {
@@ -106,9 +110,7 @@ async function migrateSyncPreferences() {
         : [legacy.promptCategory].filter(Boolean);
     const normalizedNames = new Set(names.map((name) => String(name).trim().toLowerCase()).filter(Boolean));
     if (normalizedNames.has('motivational')) normalizedNames.add('motivation');
-    if (['software development', 'programming', 'coding'].some((name) => normalizedNames.has(name))) {
-        normalizedNames.add('code');
-    }
+    if (normalizedNames.has('failure') || normalizedNames.has('success')) normalizedNames.add('motivation');
     const categories = PRESET_CATEGORIES.map((category) => ({
         ...category,
         enabled: normalizedNames.has(category.id)
@@ -116,7 +118,7 @@ async function migrateSyncPreferences() {
             || normalizedNames.has(category.topic.toLowerCase())
     }));
     const knownNames = new Set([...PRESET_CATEGORIES.map((category) => category.id),
-        'motivational', 'software development', 'programming', 'coding']);
+        'motivational']);
     const categoryChanged = [...normalizedNames].some((name) => !knownNames.has(name));
 
     const endOfToday = new Date();
